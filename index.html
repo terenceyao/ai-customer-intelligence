@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI客户情报分析平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1319;
+  --panel:#161D26;
+  --panel-2:#1C2530;
+  --border:#26313F;
+  --border-soft:#1E2733;
+  --text:#E7ECF1;
+  --text-dim:#93A1AF;
+  --text-faint:#5C6A79;
+  --amber:#E3A857;
+  --amber-dim:#8C6B3B;
+  --teal:#4FD1C5;
+  --teal-dim:#2E6B65;
+  --red:#E0645A;
+  --red-dim:#7A3934;
+  --violet:#9C8CE0;
+  --font-display:'Space Grotesk', sans-serif;
+  --font-body:'IBM Plex Sans', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(circle at 15% -10%, rgba(227,168,87,0.06), transparent 40%),
+    radial-gradient(circle at 100% 0%, rgba(79,209,197,0.05), transparent 45%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--amber-dim); color:#fff;}
+a{color:var(--teal);}
+button{font-family:var(--font-body); cursor:pointer;}
+input,textarea,select{font-family:var(--font-body);}
+
+/* ---------- top bar ---------- */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 28px; border-bottom:1px solid var(--border-soft);
+  position:sticky; top:0; background:rgba(14,19,25,0.92); backdrop-filter:blur(8px); z-index:50;
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand-mark{
+  width:30px; height:30px; border-radius:7px;
+  background:conic-gradient(from 220deg, var(--amber), var(--teal), var(--amber));
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:700; color:#0E1319; font-size:14px;
+}
+.brand-text{font-family:var(--font-display); font-weight:600; font-size:16px; letter-spacing:0.2px;}
+.brand-sub{font-size:11px; color:var(--text-faint); font-family:var(--font-mono); margin-top:1px;}
+.version-badge{font-size:10px; font-family:var(--font-mono); color:var(--text-faint); border:1px solid var(--border); border-radius:10px; padding:1px 7px; vertical-align:middle; font-weight:400;}
+.version-badge:hover{color:var(--amber); border-color:var(--amber-dim); cursor:pointer;}
+.retry-btn{background:none; border:1px solid var(--red-dim); color:var(--red); border-radius:6px; padding:5px 12px; font-size:11.5px; font-family:var(--font-mono); margin-top:8px;}
+.retry-btn:hover{background:rgba(224,101,90,0.08);}
+.retry-inline{background:none; border:1px solid var(--border); color:var(--text-faint); border-radius:5px; padding:1px 8px; font-size:10.5px; font-family:var(--font-mono); margin-left:8px;}
+.retry-inline:hover{border-color:var(--amber-dim); color:var(--amber);}
+.changelog-entry{margin-bottom:16px;}
+.changelog-entry .v{font-family:var(--font-mono); font-size:12px; color:var(--amber); font-weight:600;}
+.changelog-entry .d{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); margin-left:8px;}
+.changelog-entry ul{margin:6px 0 0; padding-left:16px;}
+.changelog-entry li{font-size:12px; color:var(--text-dim); line-height:1.6; margin-bottom:3px;}
+.topbar-right{display:flex; align-items:center; gap:14px;}
+.token-pill{
+  font-family:var(--font-mono); font-size:11px; color:var(--text-dim);
+  border:1px solid var(--border); border-radius:20px; padding:5px 12px;
+  display:flex; align-items:center; gap:8px;
+}
+.token-pill b{color:var(--amber); font-weight:500;}
+.icon-btn{
+  background:transparent; border:1px solid var(--border); color:var(--text-dim);
+  border-radius:8px; padding:7px 12px; font-size:12.5px; display:flex; align-items:center; gap:6px;
+  transition:all .15s;
+}
+.icon-btn:hover{border-color:var(--text-faint); color:var(--text);}
+
+/* ---------- layout shell ---------- */
+.shell{max-width:1320px; margin:0 auto; padding:0 28px 80px;}
+
+/* ---------- hero / search ---------- */
+.hero{
+  padding:70px 0 40px; text-align:center; position:relative;
+}
+.hero-eyebrow{
+  font-family:var(--font-mono); font-size:12px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--amber); margin-bottom:18px;
+}
+.hero h1{
+  font-family:var(--font-display); font-weight:600; font-size:40px; line-height:1.2; margin:0 0 14px;
+  letter-spacing:-0.5px;
+}
+.hero h1 span{color:var(--text-dim); font-weight:400;}
+.hero p{color:var(--text-dim); font-size:15px; max-width:560px; margin:0 auto 36px; line-height:1.7;}
+
+.search-wrap{max-width:640px; margin:0 auto;}
+.search-box{
+  display:flex; gap:8px; background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; padding:8px; box-shadow:0 20px 60px -30px rgba(0,0,0,0.6);
+}
+.search-box input{
+  flex:1; background:transparent; border:none; outline:none; color:var(--text);
+  font-size:15px; padding:12px 14px;
+}
+.search-box input::placeholder{color:var(--text-faint);}
+.search-box button{
+  background:var(--amber); color:#181008; border:none; border-radius:8px;
+  padding:0 22px; font-weight:600; font-size:14px; font-family:var(--font-display);
+  transition:transform .12s, background .15s;
+}
+.search-box button:hover{background:#EDB86B;}
+.search-box button:active{transform:scale(0.98);}
+.search-box button:disabled{opacity:.5; cursor:not-allowed;}
+
+.adv-toggle{
+  margin-top:14px; font-size:12.5px; color:var(--text-faint); background:none; border:none;
+  font-family:var(--font-mono); letter-spacing:0.3px;
+}
+.adv-toggle:hover{color:var(--text-dim);}
+
+.adv-panel{
+  max-width:640px; margin:14px auto 0; background:var(--panel); border:1px solid var(--border-soft);
+  border-radius:12px; padding:18px 20px; text-align:left; display:none;
+}
+.adv-panel.open{display:block;}
+.adv-row{display:grid; grid-template-columns:110px 1fr; gap:14px; align-items:start; margin-bottom:12px;}
+.adv-row:last-child{margin-bottom:0;}
+.adv-label{font-size:12px; color:var(--text-faint); font-family:var(--font-mono); padding-top:6px;}
+.chip-group{display:flex; flex-wrap:wrap; gap:6px;}
+.chip{
+  border:1px solid var(--border); background:var(--panel-2); color:var(--text-dim);
+  font-size:12px; padding:5px 11px; border-radius:20px; transition:all .12s;
+}
+.chip.active{border-color:var(--amber); color:var(--amber); background:rgba(227,168,87,0.08);}
+.chip:hover{border-color:var(--text-faint);}
+
+.example-row{margin-top:18px; font-size:12px; color:var(--text-faint);}
+.example-row button{background:none; border:none; color:var(--teal); font-size:12px; text-decoration:underline; text-underline-offset:3px; padding:0 3px;}
+
+/* ---------- progress ---------- */
+.progress-wrap{max-width:640px; margin:30px auto 0; display:none;}
+.progress-wrap.show{display:block;}
+.progress-log{
+  background:var(--panel); border:1px solid var(--border-soft); border-radius:12px; padding:16px 18px;
+  font-family:var(--font-mono); font-size:12.5px; max-height:260px; overflow-y:auto;
+}
+.progress-item{display:flex; align-items:center; gap:10px; padding:6px 0; color:var(--text-faint);}
+.progress-item.active{color:var(--text);}
+.progress-item.done{color:var(--teal);}
+.progress-item.error{color:var(--red);}
+.progress-dot{width:6px; height:6px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
+.progress-item.active .progress-dot{background:var(--amber); box-shadow:0 0 0 4px rgba(227,168,87,0.15); animation:pulse 1.2s infinite;}
+.progress-item.done .progress-dot{background:var(--teal);}
+.progress-item.error .progress-dot{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* ---------- company selection ---------- */
+.select-panel{max-width:640px; margin:24px auto 0; display:none;}
+.select-panel.show{display:block;}
+.select-panel h3{font-family:var(--font-display); font-size:15px; margin:0 0 4px;}
+.select-panel p{color:var(--text-faint); font-size:12.5px; margin:0 0 14px;}
+.cand-card{
+  background:var(--panel); border:1px solid var(--border-soft); border-radius:10px; padding:14px 16px;
+  margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; transition:border-color .12s;
+}
+.cand-card:hover{border-color:var(--amber-dim); cursor:pointer;}
+.cand-name{font-weight:600; font-size:14px;}
+.cand-meta{color:var(--text-faint); font-size:12px; margin-top:2px; font-family:var(--font-mono);}
+.cand-go{color:var(--amber); font-size:12px; font-family:var(--font-mono);}
+
+/* ---------- error banner ---------- */
+.error-banner{
+  max-width:640px; margin:24px auto 0; background:rgba(224,101,90,0.08); border:1px solid var(--red-dim);
+  border-radius:10px; padding:14px 16px; font-size:13px; color:#F0A79F; display:none;
+}
+.error-banner.show{display:block;}
+
+/* ---------- results shell ---------- */
+.results{display:none; margin-top:36px;}
+.results.show{display:grid; grid-template-columns:280px 1fr; gap:22px; align-items:start;}
+@media (max-width:900px){ .results.show{grid-template-columns:1fr;} }
+
+/* left column */
+.left-col{position:sticky; top:76px; display:flex; flex-direction:column; gap:16px;}
+.card{background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius); padding:18px;}
+.overview-head{display:flex; gap:12px; align-items:center; margin-bottom:14px;}
+.overview-logo{
+  width:44px; height:44px; border-radius:9px; background:var(--panel-2); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; color:var(--amber);
+}
+.overview-name{font-family:var(--font-display); font-weight:600; font-size:16px; line-height:1.25;}
+.overview-domain{font-size:11.5px; color:var(--text-faint); font-family:var(--font-mono);}
+.kv-list{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
+.kv-row{display:flex; justify-content:space-between; font-size:12.5px; gap:10px;}
+.kv-row .k{color:var(--text-faint);}
+.kv-row .v{color:var(--text); text-align:right;}
+.exec-summary{font-size:12.5px; line-height:1.7; color:var(--text-dim); margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);}
+
+.score-dial-wrap{display:flex; flex-direction:column; align-items:center; padding:20px 18px;}
+.score-num{font-family:var(--font-display); font-size:38px; font-weight:700;}
+.score-tier{font-family:var(--font-mono); font-size:11px; letter-spacing:1px; margin-top:4px;}
+.score-bars{display:flex; flex-direction:column; gap:7px; width:100%; margin-top:16px;}
+.score-bar-row{font-size:11px; color:var(--text-faint);}
+.score-bar-track{height:5px; background:var(--panel-2); border-radius:3px; margin-top:3px; overflow:hidden;}
+.score-bar-fill{height:100%; background:linear-gradient(90deg, var(--amber-dim), var(--amber));}
+
+.actions-card .icon-btn{width:100%; justify-content:center; margin-bottom:8px;}
+.actions-card .icon-btn:last-child{margin-bottom:0;}
+
+/* tabs */
+.tabbar{display:flex; gap:2px; overflow-x:auto; border-bottom:1px solid var(--border-soft); margin-bottom:20px;}
+.tab-btn{
+  background:none; border:none; color:var(--text-faint); font-size:12.5px; font-family:var(--font-mono);
+  padding:10px 14px; white-space:nowrap; border-bottom:2px solid transparent; position:relative;
+}
+.tab-btn.active{color:var(--amber); border-bottom-color:var(--amber);}
+.tab-btn .dot{display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--teal); margin-left:5px; vertical-align:middle; opacity:0;}
+.tab-btn.ready .dot{opacity:1;}
+
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.section-title{font-family:var(--font-display); font-weight:600; font-size:14px; margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+.section-title .n{color:var(--text-faint); font-weight:400; font-family:var(--font-mono); font-size:11px;}
+.empty-state{color:var(--text-faint); font-size:12.5px; padding:30px 0; text-align:center; font-family:var(--font-mono);}
+
+.grid-cards{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:640px){.grid-cards{grid-template-columns:1fr;}}
+.mini-card{background:var(--panel); border:1px solid var(--border-soft); border-radius:10px; padding:16px;}
+.mini-card h4{font-size:13px; margin:0 0 8px; font-family:var(--font-display);}
+.mini-card p{font-size:12.5px; color:var(--text-dim); line-height:1.65; margin:0;}
+.tag-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+.tag{font-size:11px; background:var(--panel-2); border:1px solid var(--border); color:var(--text-dim); padding:3px 9px; border-radius:14px;}
+
+.badge{font-size:10.5px; font-family:var(--font-mono); padding:2px 8px; border-radius:10px; letter-spacing:.3px;}
+.badge.Confirmed, .badge.High{background:rgba(79,209,197,0.12); color:var(--teal); border:1px solid var(--teal-dim);}
+.badge.Likely, .badge.Medium{background:rgba(227,168,87,0.12); color:var(--amber); border:1px solid var(--amber-dim);}
+.badge.Unknown, .badge.Low{background:rgba(146,158,175,0.1); color:var(--text-faint); border:1px solid var(--border);}
+.badge.Excellent{background:rgba(79,209,197,0.15); color:var(--teal); border:1px solid var(--teal-dim);}
+.badge.High.fit{background:rgba(156,140,224,0.15); color:var(--violet); border:1px solid #4a4179;}
+
+.data-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+.data-table th{text-align:left; color:var(--text-faint); font-family:var(--font-mono); font-weight:500; font-size:11px; padding:8px 10px; border-bottom:1px solid var(--border-soft);}
+.data-table td{padding:10px; border-bottom:1px solid var(--border-soft); color:var(--text-dim); vertical-align:top;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table .strong{color:var(--text); font-weight:500;}
+
+.list-card{background:var(--panel); border:1px solid var(--border-soft); border-radius:10px; padding:16px 18px; margin-bottom:12px;}
+.list-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px;}
+.list-card-title{font-weight:600; font-size:13.5px;}
+.list-card-sub{font-size:11.5px; color:var(--text-faint); margin-top:2px; font-family:var(--font-mono);}
+.list-card p{font-size:12.5px; color:var(--text-dim); line-height:1.6; margin:6px 0 0;}
+.evidence{font-size:11.5px; color:var(--text-faint); font-style:italic; margin-top:6px; border-left:2px solid var(--border); padding-left:8px;}
+
+.person-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+.person-card{background:var(--panel); border:1px solid var(--border-soft); border-radius:10px; padding:14px;}
+.person-name{font-weight:600; font-size:13px;}
+.person-title{font-size:11.5px; color:var(--text-dim); margin-top:2px;}
+.person-role{display:inline-block; margin-top:8px; font-size:10.5px; font-family:var(--font-mono); color:var(--violet); background:rgba(156,140,224,0.1); border:1px solid #4a4179; padding:2px 8px; border-radius:10px;}
+
+.ecosystem-cols{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+@media (max-width:760px){.ecosystem-cols{grid-template-columns:1fr 1fr;}}
+.eco-col h5{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); font-family:var(--font-mono); margin:0 0 8px;}
+.eco-col ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px;}
+.eco-col li{font-size:12.5px; color:var(--text-dim); padding:6px 8px; background:var(--panel-2); border-radius:6px;}
+
+.signal-row{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border-soft);}
+.signal-row:last-child{border-bottom:none;}
+.signal-cat{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); width:90px; flex-shrink:0; padding-top:2px;}
+.signal-body{flex:1;}
+.signal-title{font-size:13px; font-weight:500;}
+.signal-meta{font-size:11px; color:var(--text-faint); margin-top:2px; font-family:var(--font-mono);}
+.signal-interp{font-size:12px; color:var(--text-dim); margin-top:5px;}
+
+.fit-card{background:var(--panel); border:1px solid var(--border-soft); border-radius:10px; padding:16px; margin-bottom:12px;}
+.fit-head{display:flex; justify-content:space-between; align-items:center;}
+.fit-score{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--amber);}
+.fit-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; font-size:12px;}
+.fit-grid .lbl{color:var(--text-faint); font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px;}
+.fit-grid .val{color:var(--text-dim); line-height:1.55;}
+
+.opp-cols{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+@media (max-width:900px){.opp-cols{grid-template-columns:1fr;}}
+.opp-col-head{font-family:var(--font-mono); font-size:11px; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border-soft);}
+.opp-col-head.high{color:var(--teal);}
+.opp-col-head.medium{color:var(--amber);}
+.opp-col-head.long{color:var(--text-faint);}
+.opp-item{background:var(--panel); border:1px solid var(--border-soft); border-radius:8px; padding:12px; margin-bottom:10px; font-size:12px;}
+.opp-item .title{font-weight:600; font-size:13px; margin-bottom:4px;}
+.opp-item .meta{color:var(--text-faint); font-size:11px; margin-bottom:6px; font-family:var(--font-mono);}
+.opp-item .act{color:var(--text-dim); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border-soft);}
+
+.strategy-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:640px){.strategy-grid{grid-template-columns:1fr;}}
+.q-list{list-style:none; margin:0; padding:0; counter-reset:q;}
+.q-list li{counter-increment:q; padding:10px 0 10px 30px; border-bottom:1px solid var(--border-soft); position:relative; font-size:13px; color:var(--text-dim);}
+.q-list li:last-child{border-bottom:none;}
+.q-list li::before{content:counter(q); position:absolute; left:0; top:9px; width:20px; height:20px; border-radius:50%; background:var(--panel-2); border:1px solid var(--border); color:var(--amber); font-family:var(--font-mono); font-size:10.5px; display:flex; align-items:center; justify-content:center;}
+
+/* battle card */
+.battle-card{
+  background:linear-gradient(160deg, #1A2029, #141A22 60%); border:1px solid var(--amber-dim);
+  border-radius:14px; padding:0; overflow:hidden; box-shadow:0 20px 60px -30px rgba(0,0,0,0.7);
+}
+.bc-header{padding:22px 24px; border-bottom:1px solid var(--border-soft); display:flex; justify-content:space-between; align-items:flex-start;}
+.bc-title{font-family:var(--font-display); font-weight:700; font-size:22px;}
+.bc-sub{font-size:12px; color:var(--text-faint); margin-top:4px; font-family:var(--font-mono);}
+.bc-score{text-align:right;}
+.bc-score .n{font-family:var(--font-display); font-size:30px; font-weight:700; color:var(--amber);}
+.bc-score .t{font-size:11px; color:var(--text-faint); font-family:var(--font-mono);}
+.bc-body{padding:22px 24px; display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+@media (max-width:640px){.bc-body{grid-template-columns:1fr;}}
+.bc-sec h5{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--amber); font-family:var(--font-mono); margin:0 0 10px;}
+.bc-sec ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px;}
+.bc-sec li{font-size:12.5px; color:var(--text-dim); padding-left:14px; position:relative; line-height:1.5;}
+.bc-sec li::before{content:'—'; position:absolute; left:0; color:var(--text-faint);}
+.bc-flow{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.bc-flow .step{font-size:11.5px; background:var(--panel-2); border:1px solid var(--border); padding:4px 10px; border-radius:6px;}
+.bc-flow .arrow{color:var(--text-faint); font-size:12px;}
+.bc-next{padding:16px 24px; background:rgba(227,168,87,0.06); border-top:1px solid var(--amber-dim); font-size:13px;}
+.bc-next b{color:var(--amber);}
+
+/* sources tab */
+.source-row{display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-soft); font-size:12px;}
+.source-row .fact{flex:1; color:var(--text-dim);}
+.source-row .meta{font-family:var(--font-mono); color:var(--text-faint); text-align:right; white-space:nowrap;}
+.source-row a{font-size:11px;}
+
+/* settings drawer */
+.drawer-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; z-index:90;}
+.drawer-overlay.show{display:block;}
+.drawer{
+  position:fixed; top:0; right:0; height:100%; width:400px; max-width:90vw; background:var(--panel);
+  border-left:1px solid var(--border); z-index:91; transform:translateX(100%); transition:transform .25s ease;
+  overflow-y:auto; padding:22px;
+}
+.drawer.show{transform:translateX(0);}
+.drawer h3{font-family:var(--font-display); font-size:16px; margin:0 0 4px;}
+.drawer .desc{font-size:12px; color:var(--text-faint); margin-bottom:18px; line-height:1.6;}
+.drawer label{font-size:11.5px; color:var(--text-faint); font-family:var(--font-mono); display:block; margin:14px 0 5px;}
+.drawer input[type=text], .drawer input[type=number], .drawer textarea{
+  width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:7px; color:var(--text);
+  padding:9px 10px; font-size:12.5px; resize:vertical;
+}
+.product-row{border:1px solid var(--border-soft); border-radius:8px; padding:10px; margin-bottom:10px; position:relative;}
+.product-row .rm{position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-faint); font-size:14px;}
+.small-btn{background:var(--panel-2); border:1px solid var(--border); color:var(--text-dim); border-radius:7px; padding:7px 12px; font-size:12px; width:100%;}
+.small-btn:hover{border-color:var(--amber-dim); color:var(--amber);}
+.close-drawer{position:absolute; top:18px; right:18px; background:none; border:none; color:var(--text-faint); font-size:18px;}
+
+/* history panel */
+.history-item{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px;}
+.history-item .l{display:flex; flex-direction:column;}
+.history-item .name{font-weight:500;}
+.history-item .meta{font-size:11px; color:var(--text-faint); font-family:var(--font-mono);}
+.history-item .r{display:flex; align-items:center; gap:10px;}
+.history-item button{background:none; border:1px solid var(--border); color:var(--text-dim); border-radius:6px; padding:4px 10px; font-size:11px;}
+.history-item button:hover{border-color:var(--amber-dim); color:var(--amber);}
+
+@media print{
+  .topbar, .search-wrap, .adv-toggle, .adv-panel, .tabbar, .actions-card, .left-col .icon-btn, .drawer, .drawer-overlay{display:none !important;}
+  body{background:#fff; color:#000;}
+  .card, .mini-card, .list-card, .battle-card{border-color:#ccc !important; background:#fff !important;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">AI</div>
+    <div>
+      <div class="brand-text">AI客户情报分析平台 <span id="versionBadge" class="version-badge"></span></div>
+      <div class="brand-sub">Company → Intelligence → Opportunity → Action</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="token-pill" id="tokenPill" title="本次会话累计Token消耗与预估费用">Token <b id="tokenCount">0</b> · 预估 $<span id="costCount">0.00</span></div>
+    <button class="icon-btn" id="historyBtn">研究历史</button>
+    <button class="icon-btn" id="settingsBtn">产品库 & 设置</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <div class="hero" id="heroSection">
+    <div class="hero-eyebrow">AI B2B ACCOUNT INTELLIGENCE</div>
+    <h1>输入客户公司,<span>3 分钟生成销售作战卡</span></h1>
+    <p>公司名称、官网或 LinkedIn URL → AI 自动完成公司画像、技术栈、竞对、决策人、采购信号与我司产品匹配分析。所有关键结论均附来源与可信度标注。</p>
+
+    <div class="search-wrap">
+      <div class="search-box">
+        <input type="text" id="companyInput" placeholder="输入公司名称、官网或 LinkedIn URL,例如 Vigilo Argentina" />
+        <button id="searchBtn">开始分析</button>
+      </div>
+      <button class="adv-toggle" id="advToggle">▾ 高级选项（目标市场 · 行业 · 我司产品）</button>
+      <div class="adv-panel" id="advPanel">
+        <div class="adv-row">
+          <div class="adv-label">TARGET MARKET</div>
+          <div class="chip-group" data-group="market">
+            <button class="chip active" data-val="Global">Global</button>
+            <button class="chip" data-val="LATAM">LATAM</button>
+            <button class="chip" data-val="North America">North America</button>
+            <button class="chip" data-val="Europe">Europe</button>
+            <button class="chip" data-val="Asia">Asia</button>
+          </div>
+        </div>
+        <div class="adv-row">
+          <div class="adv-label">MY INDUSTRY</div>
+          <div class="chip-group" data-group="industry">
+            <button class="chip active" data-val="Telematics / Fleet Management">Telematics/Fleet</button>
+            <button class="chip" data-val="IoT">IoT</button>
+            <button class="chip" data-val="GPS">GPS</button>
+            <button class="chip" data-val="AI Video">AI Video</button>
+            <button class="chip" data-val="EV">EV</button>
+          </div>
+        </div>
+      </div>
+      <div class="example-row">
+        试试示例：
+        <button data-ex="Samsara">Samsara</button>·
+        <button data-ex="Geotab">Geotab</button>·
+        <button data-ex="Vigilo Argentina">Vigilo Argentina</button>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-log" id="progressLog"></div>
+    </div>
+
+    <div class="error-banner" id="errorBanner"></div>
+
+    <div class="select-panel" id="selectPanel">
+      <h3>找到多个同名公司</h3>
+      <p>请选择目标公司,以便继续深入分析：</p>
+      <div id="candList"></div>
+    </div>
+  </div>
+
+  <div class="results" id="resultsSection">
+    <div class="left-col">
+      <div class="card" id="overviewCard"></div>
+      <div class="card score-dial-wrap" id="scoreCard"></div>
+      <div class="card actions-card">
+        <button class="icon-btn" id="exportMdBtn">↓ 导出 Markdown</button>
+        <button class="icon-btn" id="exportPdfBtn">↓ 导出 / 打印 PDF</button>
+        <button class="icon-btn" id="newSearchBtn">＋ 新的调研</button>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="tabbar" id="tabbar"></div>
+      <div id="tabContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- settings drawer -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+  <button class="close-drawer" id="closeDrawer">✕</button>
+  <h3>我司产品库</h3>
+  <div class="desc">用于 Product Fit / Opportunity Map 匹配分析。可自行增删改，将作为上下文提供给 AI，不会被发送到公司外部（仅用于本次 API 调用）。</div>
+  <div id="productList"></div>
+  <button class="small-btn" id="addProductBtn">+ 添加产品</button>
+
+  <h3 style="margin-top:28px;">费用预估设置</h3>
+  <div class="desc">仅用于本地估算，不代表实际账单。</div>
+  <label>输入 Token 单价（$ / 百万 tokens）</label>
+  <input type="number" id="rateInput" value="3" step="0.1">
+  <label>输出 Token 单价（$ / 百万 tokens）</label>
+  <input type="number" id="rateOutput" value="15" step="0.1">
+
+  <h3 style="margin-top:28px;">关于联网与运行方式</h3>
+  <div class="desc">
+    本页面运行在 Claude 的 Artifact 沙箱中，调用 Anthropic API（含 Web Search 工具）无需你提供 API Key、无需部署，直接在本对话内即可联网调研。<br><br>
+    若你希望把本页面导出到独立环境自行托管，需要改造为使用你自己的 API Key（浏览器直连 Anthropic API 通常会被 CORS 拦截，需要一个轻量后端转发），当前版本未内置该 fallback。<br><br>
+    若遇到"Failed to fetch"：通常是瞬时网络问题或接口限流，v1.1.0 起已自动重试2次；若仍失败，对应模块会显示"重试"按钮，可单独重试，无需重新开始整个分析。
+  </div>
+
+  <h3 style="margin-top:28px;">更新记录 <span id="changelogVersionTag" style="font-size:11px;color:var(--text-faint);font-family:var(--font-mono)"></span></h3>
+  <div id="changelogList"></div>
+</div>
+
+<script>
+/* ============================= VERSION ============================= */
+const APP_VERSION = '1.1.0';
+const CHANGELOG = [
+  {version:'1.1.0', date:'2026-09-02', notes:[
+    '修复"Failed to fetch"导致整体调研中断的问题：API请求增加自动重试（网络错误/限流/5xx最多重试2次，指数退避）',
+    '单个情报Agent失败不再终止整体流程：已完成的模块立即渐进式展示，失败模块显示"重试"按钮，可单独重试而不重跑全部',
+    '公司识别成功后立即展示Overview并进入结果页，其余Agent在后台继续跑，不必等全部完成才看到结果',
+    '新增版本号与更新记录面板（设置 → 更新记录）'
+  ]},
+  {version:'1.0.0', date:'2026-09-02', notes:[
+    '首个可用版本：公司识别（含同名公司选择）、8个情报Agent（Business/Product/Technology/Competitive/Ecosystem+People/Signals/Fit&Score/Strategy&BattleCard）',
+    'Customer Score评分、Opportunity Map、Meeting Questions、Customer Battle Card',
+    '所有关键结论附Source与Confidence标注，技术栈区分Confirmed/Likely/Unknown',
+    '导出Markdown、打印/导出PDF、7天研究缓存与研究历史面板（基于Artifact持久化存储）'
+  ]}
+];
+
+/* ============================= STATE ============================= */
+const state = {
+  errors: {}, // agentId -> error message
+  market: 'Global',
+  industry: 'Telematics / Fleet Management',
+  ourProducts: [
+    {name:'GX400 4G GPS Tracker', category:'Hardware / GPS Tracker', features:'4G Cat1, GNSS, CAN, BLE, 长续航'},
+    {name:'AI-Cam200 AI主动安全摄像头', category:'AI Video', features:'ADAS, 疲劳驾驶识别, 4G实时回传'},
+    {name:'EVB-100 电池管理模块', category:'EV / BMS', features:'CAN总线, 电池健康监测, BLE诊断'}
+  ],
+  usage: {input:0, output:0},
+  results: {}, // agent results keyed by id
+  sourcesAll: [],
+  company: null, // resolved company base info
+  currentKey: null // cache key
+};
+
+const AGENT_ORDER = ['overview','business','product','tech','competitors','ecosystem','signals','fit','strategy'];
+const AGENT_LABELS = {
+  overview:'公司识别与画像', business:'商业情报分析', product:'产品情报抓取', tech:'技术栈情报分析',
+  competitors:'竞争对手情报', ecosystem:'生态与决策人分析', signals:'采购信号监控',
+  fit:'产品匹配与商机评分', strategy:'销售策略与作战卡生成'
+};
+
+/* ============================= DOM refs ============================= */
+const $ = id => document.getElementById(id);
+const heroSection = $('heroSection'), resultsSection = $('resultsSection');
+const progressWrap = $('progressWrap'), progressLog = $('progressLog');
+const errorBanner = $('errorBanner'), selectPanel = $('selectPanel'), candList = $('candList');
+const searchBtn = $('searchBtn'), companyInput = $('companyInput');
+
+/* ============================= advanced options ============================= */
+$('advToggle').onclick = () => $('advPanel').classList.toggle('open');
+document.querySelectorAll('.chip-group').forEach(group=>{
+  group.addEventListener('click', e=>{
+    if(e.target.classList.contains('chip')){
+      [...group.children].forEach(c=>c.classList.remove('active'));
+      e.target.classList.add('active');
+      const g = group.dataset.group;
+      if(g==='market') state.market = e.target.dataset.val;
+      if(g==='industry') state.industry = e.target.dataset.val;
+    }
+  });
+});
+document.querySelectorAll('[data-ex]').forEach(b=>{
+  b.onclick = ()=>{ companyInput.value = b.dataset.ex; runResearch(); };
+});
+
+/* ============================= settings drawer ============================= */
+function renderProductList(){
+  const list = $('productList'); list.innerHTML='';
+  state.ourProducts.forEach((p,i)=>{
+    const row = document.createElement('div'); row.className='product-row';
+    row.innerHTML = `
+      <button class="rm" data-i="${i}">✕</button>
+      <label style="margin-top:0">产品名称</label>
+      <input type="text" data-f="name" data-i="${i}" value="${escapeHtml(p.name)}">
+      <label>类别</label>
+      <input type="text" data-f="category" data-i="${i}" value="${escapeHtml(p.category)}">
+      <label>关键特性</label>
+      <textarea data-f="features" data-i="${i}" rows="2">${escapeHtml(p.features)}</textarea>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.rm').forEach(b=> b.onclick = ()=>{ state.ourProducts.splice(+b.dataset.i,1); renderProductList(); });
+  list.querySelectorAll('input,textarea').forEach(inp=>{
+    inp.onchange = ()=>{ state.ourProducts[+inp.dataset.i][inp.dataset.f] = inp.value; };
+  });
+}
+renderProductList();
+$('addProductBtn').onclick = ()=>{ state.ourProducts.push({name:'新产品',category:'',features:''}); renderProductList(); };
+
+function openDrawer(){ $('drawer').classList.add('show'); $('drawerOverlay').classList.add('show'); }
+function closeDrawer(){ $('drawer').classList.remove('show'); $('drawerOverlay').classList.remove('show'); }
+$('settingsBtn').onclick = openDrawer;
+$('closeDrawer').onclick = $('drawerOverlay').onclick = closeDrawer;
+
+$('versionBadge').textContent = 'v' + APP_VERSION;
+$('versionBadge').title = '查看更新记录';
+$('versionBadge').onclick = openDrawer;
+$('changelogVersionTag').textContent = '当前 v' + APP_VERSION;
+$('changelogList').innerHTML = CHANGELOG.map(c=>`
+  <div class="changelog-entry">
+    <span class="v">v${c.version}</span><span class="d">${c.date}</span>
+    <ul>${c.notes.map(n=>`<li>${n}</li>`).join('')}</ul>
+  </div>
+`).join('');
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ============================= API helper (with retry) ============================= */
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+async function callClaude({prompt, system, useSearch, maxTokens}, retriesLeft = 2){
+  const body = {
+    model: "claude-sonnet-4-6",
+    max_tokens: maxTokens || 1000,
+    system: system,
+    messages: [{role:"user", content: prompt}]
+  };
+  if(useSearch){
+    body.tools = [{type:"web_search_20250305", name:"web_search"}];
+  }
+
+  let resp;
+  try{
+    resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+  }catch(networkErr){
+    // fetch() itself threw -> network-level failure (offline, DNS, aborted, CORS, etc.)
+    if(retriesLeft > 0){
+      await sleep((3 - retriesLeft) * 1200 + 500);
+      return callClaude({prompt, system, useSearch, maxTokens}, retriesLeft - 1);
+    }
+    throw new Error('网络请求失败（Failed to fetch），已自动重试仍未成功。请检查网络连接后点击"重试"。');
+  }
+
+  if(!resp.ok){
+    const retriable = resp.status === 429 || resp.status >= 500;
+    if(retriable && retriesLeft > 0){
+      await sleep((3 - retriesLeft) * 1200 + 500);
+      return callClaude({prompt, system, useSearch, maxTokens}, retriesLeft - 1);
+    }
+    const t = await resp.text().catch(()=> '');
+    throw new Error(`API error ${resp.status}: ${t.slice(0,300)}`);
+  }
+
+  const data = await resp.json();
+  if(data.usage){
+    state.usage.input += (data.usage.input_tokens||0);
+    state.usage.output += (data.usage.output_tokens||0);
+    updateTokenPill();
+  }
+  const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  if(!text.trim()){
+    throw new Error('模型返回内容为空，可能是被截断或工具调用异常。');
+  }
+  return text;
+}
+
+function parseJson(text){
+  let t = text.trim();
+  t = t.replace(/```json/gi,'').replace(/```/g,'');
+  const first = t.indexOf('{'); const last = t.lastIndexOf('}');
+  if(first===-1||last===-1) throw new Error('未找到JSON结构');
+  t = t.slice(first, last+1);
+  return JSON.parse(t);
+}
+
+function updateTokenPill(){
+  $('tokenCount').textContent = (state.usage.input+state.usage.output).toLocaleString();
+  const rateIn = parseFloat($('rateInput').value)||0, rateOut = parseFloat($('rateOutput').value)||0;
+  const cost = (state.usage.input/1e6*rateIn) + (state.usage.output/1e6*rateOut);
+  $('costCount').textContent = cost.toFixed(3);
+}
+
+/* ============================= progress UI ============================= */
+function initProgress(){
+  progressWrap.classList.add('show');
+  progressLog.innerHTML = AGENT_ORDER.map(id=>`
+    <div class="progress-item" id="pg-${id}"><div class="progress-dot"></div><span>${AGENT_LABELS[id]}</span></div>
+  `).join('') + `<div class="progress-item" id="pg-identify"><div class="progress-dot"></div><span>识别目标公司</span></div>`;
+  // move identify to top
+  progressLog.prepend(progressLog.lastElementChild);
+}
+function setProgress(id, status, note){
+  const el = $('pg-'+id); if(!el) return;
+  el.classList.remove('active','done','error');
+  el.classList.add(status);
+  el.querySelector('span').textContent = `${AGENT_LABELS[id]||id}${note ? ' — ' + note : ''}`;
+  const oldBtn = el.querySelector('.retry-inline'); if(oldBtn) oldBtn.remove();
+  if(status === 'error' && AGENT_FN[id]){
+    const btn = document.createElement('button');
+    btn.className = 'retry-inline'; btn.textContent = '重试';
+    btn.onclick = (e)=>{ e.stopPropagation(); retryAgent(id); };
+    el.appendChild(btn);
+  }
+}
+
+/* ============================= system prompt ============================= */
+const SYSTEM_PROMPT = `你是"AI客户情报分析平台"的后台情报分析引擎（B2B销售情报，聚焦电信/物联网/车队管理/GPS/AI视频/新能源行业的海外客户调研）。
+规则：
+1. 只输出严格合法的JSON，不能有任何解释文字、前后缀说明或Markdown代码块标记（不要输出\`\`\`）。
+2. 所有内容用中文撰写（公司名、人名、产品名、URL等专有名词保留原文）。
+3. 对不确定或无法用检索证据支撑的信息，confidence字段必须填"Unknown"，禁止编造事实、编造人名或编造URL。
+4. 每个关键结论尽量给出sources数组，包含fact（结论摘要）、url、source_type（Official Website/LinkedIn/News/Government/Company Registry/Industry Report/Social Media/Other）、confidence（Confirmed/High Confidence/Medium Confidence/Low Confidence）。
+5. executive_summary等摘要字段严格控制字数，避免空话套话，聚焦可用于销售决策的信息。`;
+
+/* ============================= main flow ============================= */
+searchBtn.onclick = runResearch;
+companyInput.addEventListener('keydown', e=>{ if(e.key==='Enter') runResearch(); });
+$('newSearchBtn').onclick = ()=>{ resultsSection.classList.remove('show'); heroSection.style.display='block'; window.scrollTo({top:0,behavior:'smooth'}); };
+
+async function runResearch(){
+  const q = companyInput.value.trim();
+  if(!q) return;
+  errorBanner.classList.remove('show'); selectPanel.classList.remove('show');
+  resultsSection.classList.remove('show');
+  state.results = {}; state.sourcesAll = []; state.company = null;
+  searchBtn.disabled = true; searchBtn.textContent = '分析中…';
+  initProgress();
+
+  try{
+    // check cache first
+    const cacheKey = 'research:' + slug(q);
+    let cached = null;
+    try{
+      const r = await window.storage.get(cacheKey, false);
+      if(r && r.value) cached = JSON.parse(r.value);
+    }catch(e){ /* not found, ignore */ }
+
+    if(cached && (Date.now() - cached.timestamp) < 7*24*3600*1000){
+      setProgress('identify','done','命中缓存（<7天），直接展示');
+      loadFromCache(cached);
+      finishProgress();
+      return;
+    }
+
+    setProgress('identify','active');
+    const idText = await callClaude({
+      system: SYSTEM_PROMPT,
+      useSearch: true,
+      maxTokens: 900,
+      prompt: `请识别以下目标公司并给出基础画像。用户输入："${q}"。目标市场偏好：${state.market}；我方所处行业：${state.industry}。
+如果搜索后发现有多个同名或高度相似的公司（不同国家/主体），返回status="ambiguous"并在candidates中列出2-5个候选（含name/domain/country/note简述区别）。
+如果完全找不到相关公司，返回status="not_found"。
+如果能确定唯一目标，返回status="found"，并在company对象中填充：name, domain, country, city, founded, employees, revenue_estimate, company_type, industry, company_size, parent_company, subsidiaries, linkedin, social_media, executive_summary（不超过200字的中文摘要，聚焦这家公司是做什么的、规模、市场定位）。
+JSON schema:
+{"status":"found|ambiguous|not_found","candidates":[{"name":"","domain":"","country":"","note":""}],"company":{"name":"","domain":"","country":"","city":"","founded":"","employees":"","revenue_estimate":"","company_type":"","industry":"","company_size":"","parent_company":"","subsidiaries":"","linkedin":"","social_media":""},"executive_summary":"","sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`
+    });
+    const id = parseJson(idText);
+
+    if(id.status === 'not_found'){
+      setProgress('identify','error','未找到公司');
+      showError('未能找到与 “' + q + '” 匹配的公司信息，请尝试输入更完整的公司名称或官网域名。');
+      resetProgressUi(); return;
+    }
+    if(id.status === 'ambiguous'){
+      setProgress('identify','done','发现多个候选，请选择');
+      showCandidates(id.candidates, q);
+      resetProgressUi(); return;
+    }
+
+    setProgress('identify','done', id.company.name);
+    state.company = id.company;
+    state.company.executive_summary = id.executive_summary;
+    state.company.sources = id.sources||[];
+    mergeSources(id.sources);
+    state.currentKey = cacheKey;
+    state.currentQuery = q;
+
+    // show results immediately with just the overview; other tabs fill in progressively
+    heroSection.style.display='none';
+    resultsSection.classList.add('show');
+    renderOverview();
+    renderScore();
+    renderTabs();
+    window.scrollTo({top:0,behavior:'smooth'});
+
+    await runAllAgents();
+    if(!Object.keys(state.errors).length){
+      saveToCache(cacheKey, q);
+    }
+
+  }catch(err){
+    console.error(err);
+    showError('分析过程中出现错误：' + err.message + (state.company ? '（已获取的部分结果仍保留在下方结果页中）' : ''), !state.company);
+  }finally{
+    resetProgressUi();
+  }
+}
+
+function resetProgressUi(){
+  searchBtn.disabled = false; searchBtn.textContent = '开始分析';
+}
+function finishProgress(){
+  resetProgressUi();
+  renderAll();
+}
+
+function showError(msg, retryable){
+  errorBanner.innerHTML = escapeHtml(msg) + (retryable ? ` <button class="retry-inline" style="margin-left:10px;" onclick="window.retryLastSearch()">重试</button>` : '');
+  errorBanner.classList.add('show');
+}
+window.retryLastSearch = function(){
+  errorBanner.classList.remove('show');
+  runResearch();
+};
+
+function showCandidates(cands, originalQuery){
+  candList.innerHTML = '';
+  cands.forEach(c=>{
+    const div = document.createElement('div'); div.className='cand-card';
+    div.innerHTML = `<div><div class="cand-name">${escapeHtml(c.name)}</div><div class="cand-meta">${escapeHtml(c.domain||'')} · ${escapeHtml(c.country||'')} — ${escapeHtml(c.note||'')}</div></div><div class="cand-go">选择 →</div>`;
+    div.onclick = ()=>{
+      selectPanel.classList.remove('show');
+      companyInput.value = c.name + (c.domain ? ' ('+c.domain+')' : '');
+      runResearch();
+    };
+    candList.appendChild(div);
+  });
+  selectPanel.classList.add('show');
+}
+
+function slug(s){ return s.toLowerCase().trim().replace(/[^a-z0-9\u4e00-\u9fa5]+/g,'-').slice(0,60); }
+
+function mergeSources(arr){
+  if(!arr) return;
+  arr.forEach(s=> state.sourcesAll.push(s));
+}
+
+/* ---------- agent runners ---------- */
+const ctx = () => `公司: ${state.company.name} (${state.company.domain})，国家: ${state.company.country}，目标市场: ${state.market}，我方行业: ${state.industry}。`;
+
+const AGENT_FN = {
+  business: async () => {
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, prompt:
+      `${ctx()} 请分析该公司的商业情报。JSON schema:
+      {"business_model":"","revenue_model":"","target_customer":"","core_products":["",""],"sales_model":"","market_regions":["",""],"core_market":"","growth_market":"","sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
+    state.results.business = parseJson(text); mergeSources(state.results.business.sources);
+  },
+  product: async () => {
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, prompt:
+      `${ctx()} 请从官网及公开资料中抓取该公司的产品情报（最多6个核心产品/方案）。JSON schema:
+      {"products":[{"name":"","type":"","description":"","target_customer":"","key_features":["",""],"tech_specs":"","price":"","status":"","launch_date":""}],"product_portfolio_summary":"","product_strategy":"","potential_gaps":"","sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
+    state.results.product = parseJson(text); mergeSources(state.results.product.sources);
+  },
+  tech: async () => {
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, prompt:
+      `${ctx()} 请分析该公司使用/集成的技术栈（如 GPS/GNSS/2G/3G/4G/Cat1/Cat4/LTE-M/NB-IoT/eSIM/CAN/OBD/BLE/AI Camera/Cloud/AWS/Azure/API/MQTT等），如能确认具体供应商请标出。禁止把推测写成事实，confidence必须准确反映证据强度。JSON schema:
+      {"technologies":[{"technology":"","vendor":"","product":"","confidence":"Confirmed|Likely|Unknown","evidence":""}],"summary":"","sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
+    state.results.tech = parseJson(text); mergeSources(state.results.tech.sources);
+  },
+  competitors: async () => {
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, prompt:
+      `${ctx()} 请找出该公司的直接竞争对手（2-4个）与间接竞争对手（1-3个）。JSON schema:
+      {"direct_competitors":[{"company":"","product":"","market":"","strengths":"","weaknesses":"","price":"","customers":"","tech_diff":""}],"indirect_competitors":[{"company":"","product":"","market":"","strengths":"","weaknesses":"","price":"","customers":"","tech_diff":""}],"sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
+    state.results.competitors = parseJson(text); mergeSources(state.results.competitors.sources);
+  },
+  ecosystem: async () => {
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, prompt:
+      `${ctx()} 请分析该公司的生态关系（客户/供应商/合作伙伴/分销商/电信运营商/技术供应商/投资方，每类最多4项，找不到就留空数组），并找出关键决策人（3-6人，含CEO/CTO/采购/商务负责人等，仅列出通过公开信息如LinkedIn/官网可验证的真实姓名，找不到真实姓名就不要编造，宁可少列）。JSON schema:
+      {"ecosystem":{"customers":[""],"suppliers":[""],"partners":[""],"distributors":[""],"telecom_operators":[""],"technology_vendors":[""],"investors":[""]},"decision_makers":[{"name":"","title":"","department":"","linkedin":"","location":"","seniority":"","decision_role":"Economic Buyer|Technical Buyer|Influencer|Champion|Procurement"}],"sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
+    state.results.ecosystem = parseJson(text); mergeSources(state.results.ecosystem.sources);
+  },
+  signals: async () => {
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, prompt:
+      `${ctx()} 请监控该公司近12个月内的采购/业务信号（新闻、招聘、融资、并购、合作、新市场、新产品、技术迁移、法规变化等），最多8条，按重要性排序，找不到就返回空数组，不要编造日期。JSON schema:
+      {"signals":[{"category":"Business|Hiring|Technology|Product|Regulatory","signal":"","date":"","importance":"High|Medium|Low","evidence":"","interpretation":""}],"sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
+    state.results.signals = parseJson(text); mergeSources(state.results.signals.sources);
+  },
+  fit: async () => {
+    const ourProductsStr = state.ourProducts.map(p=>`- ${p.name} | ${p.category} | ${p.features}`).join('\n');
+    const contextSummary = JSON.stringify({
+      company: {name:state.company.name, industry:state.company.industry, size:state.company.company_size, summary:state.company.executive_summary},
+      business: state.results.business||{}, tech: (state.results.tech||{}).technologies||[], signals: (state.results.signals||{}).signals||[],
+      products: (state.results.product||{}).products||[]
+    }).slice(0, 6000);
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:false, maxTokens:1000, prompt:
+      `基于以下客户情报上下文，将客户需求与我司产品库进行匹配打分，并生成机会地图与客户评分。
+客户情报（JSON摘要，部分模块若缺失代表该模块尚未完成或获取失败，请基于现有信息合理评估）：${contextSummary}
+我司产品库：
+${ourProductsStr}
+
+打分规则（客户评分总分100，权重）：Company Size 15% / Market Potential 15% / Product Fit 20% / Technology Fit 15% / Purchase Potential 15% / Buying Signals 10% / Strategic Value 10%。
+Product Fit Score等级：90-100 Excellent，75-89 High，60-74 Medium，40-59 Low，<40 Very Low。
+Customer Priority：S 90-100 / A 80-89 / B 70-79 / C 60-69 / D <60。
+JSON schema:
+{"product_fit":[{"our_product":"","fit_score":0,"level":"Excellent|High|Medium|Low|Very Low","why":"","evidence":"","gap":"","entry_strategy":""}],"opportunities":{"high_priority":[{"opportunity":"","product":"","fit_score":0,"potential_volume":"","buying_signal":"","reason":"","recommended_action":""}],"medium_priority":[{"opportunity":"","product":"","fit_score":0,"potential_volume":"","buying_signal":"","reason":"","recommended_action":""}],"long_term":[{"opportunity":"","product":"","fit_score":0,"potential_volume":"","buying_signal":"","reason":"","recommended_action":""}]},"customer_score":{"total":0,"breakdown":{"company_size":0,"market_potential":0,"product_fit":0,"technology_fit":0,"purchase_potential":0,"buying_signals":0,"strategic_value":0},"priority_tier":"S|A|B|C|D"}}`});
+    state.results.fit = parseJson(text);
+  },
+  strategy: async () => {
+    const strategyContext = JSON.stringify({
+      company: state.company, business: state.results.business||{}, tech_summary: (state.results.tech||{}).summary||'',
+      competitors: (state.results.competitors||{}).direct_competitors||[], people: (state.results.ecosystem||{}).decision_makers||[],
+      signals: (state.results.signals||{}).signals||[], fit: state.results.fit||{}
+    }).slice(0, 7000);
+    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:false, maxTokens:1000, prompt:
+      `基于以下完整客户情报，生成销售策略、拜访准备材料与最终的客户作战卡（Battle Card）。拜访问题需基于该客户真实信息动态生成10-15个（不要用通用模板问题），每个问题要具体到这家公司的业务/技术/信号。
+情报上下文（部分模块若缺失代表该模块尚未完成或获取失败，请基于现有信息合理生成）：${strategyContext}
+JSON schema:
+{"sales_strategy":{"entry_point":"","recommended_product":"","recommended_persona":"","recommended_message":"","recommended_timing":"","objections":"","competitive_risks":"","next_action":""},"meeting_prep":{"background":"","key_business":"","key_products":"","current_technology":"","potential_needs":"","buying_signals":"","key_decision_makers":"","recommended_pitch":"","questions":["...10-15条"]},"battle_card":{"why_we_care":["3-5条"],"best_opportunities":["2-4条"],"buying_signals":["2-4条"],"key_decision_makers":["2-4条"],"recommended_strategy_path":["2-5个步骤，如 Hardware→Video→CAN→EV"],"next_action":""}}`});
+    state.results.strategy = parseJson(text);
+  }
+};
+
+// strategy depends on fit's output being present in context; run fit before strategy
+const DEPENDS = { strategy: ['fit'] };
+
+async function runAgent(id){
+  setProgress(id,'active');
+  try{
+    await AGENT_FN[id]();
+    delete state.errors[id];
+    setProgress(id,'done');
+  }catch(err){
+    console.error(id, err);
+    state.errors[id] = err.message || String(err);
+    setProgress(id,'error', '失败');
+  }
+  // progressive UI update after every agent, success or failure
+  renderTabs();
+  renderScore();
+}
+
+async function runAllAgents(){
+  for(const id of AGENT_ORDER){
+    if(DEPENDS[id] && DEPENDS[id].some(dep => state.errors[dep])){
+      // dependency failed — still attempt, agent function tolerates missing data
+    }
+    await runAgent(id);
+  }
+}
+
+async function retryAgent(id){
+  await runAgent(id);
+}
+
+/* ---------- cache ---------- */
+async function saveToCache(cacheKey, originalQuery){
+  const payload = {
+    timestamp: Date.now(),
+    query: originalQuery,
+    company: state.company,
+    results: state.results,
+    sourcesAll: state.sourcesAll
+  };
+  try{
+    await window.storage.set(cacheKey, JSON.stringify(payload), false);
+    await window.storage.set('history:' + cacheKey, JSON.stringify({
+      name: state.company.name, domain: state.company.domain, timestamp: payload.timestamp,
+      score: state.results.fit && state.results.fit.customer_score ? state.results.fit.customer_score.total : null,
+      key: cacheKey
+    }), false);
+  }catch(e){ console.warn('cache save failed', e); }
+}
+function loadFromCache(cached){
+  state.company = cached.company;
+  state.results = cached.results;
+  state.sourcesAll = cached.sourcesAll || [];
+}
+
+/* ---------- history panel ---------- */
+$('historyBtn').onclick = async ()=>{
+  try{
+    const list = await window.storage.list('history:', false);
+    if(!list || !list.keys || list.keys.length===0){
+      alert('暂无历史研究记录。');
+      return;
+    }
+    const items = [];
+    for(const k of list.keys){
+      try{
+        const r = await window.storage.get(k, false);
+        if(r && r.value) items.push(JSON.parse(r.value));
+      }catch(e){}
+    }
+    items.sort((a,b)=>b.timestamp-a.timestamp);
+    openHistoryDrawer(items);
+  }catch(e){
+    alert('读取研究历史失败：' + e.message);
+  }
+};
+
+function openHistoryDrawer(items){
+  const drawer = $('drawer');
+  const existing = document.getElementById('historyPanel');
+  if(existing) existing.remove();
+  const panel = document.createElement('div'); panel.id='historyPanel';
+  panel.innerHTML = `<h3 style="margin-top:0">研究历史</h3><div class="desc">最近的客户调研（缓存 7 天内可直接复用，避免重复消耗 Token）。</div>` +
+    items.map(it=>`
+      <div class="history-item">
+        <div class="l"><div class="name">${escapeHtml(it.name||'—')}</div><div class="meta">${escapeHtml(it.domain||'')} · ${new Date(it.timestamp).toLocaleDateString()} ${it.score!=null?('· Score '+it.score):''}</div></div>
+        <div class="r"><button data-key="${it.key}">打开</button></div>
+      </div>
+    `).join('');
+  drawer.prepend(panel);
+  panel.querySelectorAll('button[data-key]').forEach(b=>{
+    b.onclick = async ()=>{
+      const r = await window.storage.get(b.dataset.key, false);
+      const cached = JSON.parse(r.value);
+      loadFromCache(cached);
+      renderAll();
+      $('drawer').classList.remove('show'); $('drawerOverlay').classList.remove('show');
+      heroSection.style.display='none';
+      window.scrollTo({top:0,behavior:'smooth'});
+    };
+  });
+  drawer.classList.add('show'); $('drawerOverlay').classList.add('show');
+}
+
+/* ============================= RENDER ============================= */
+function renderAll(){
+  heroSection.style.display='none';
+  resultsSection.classList.add('show');
+  renderOverview();
+  renderScore();
+  renderTabs();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderOverview(){
+  const c = state.company;
+  $('overviewCard').innerHTML = `
+    <div class="overview-head">
+      <div class="overview-logo">${escapeHtml((c.name||'?').slice(0,2).toUpperCase())}</div>
+      <div>
+        <div class="overview-name">${escapeHtml(c.name||'')}</div>
+        <div class="overview-domain">${escapeHtml(c.domain||'')}</div>
+      </div>
+    </div>
+    <div class="kv-list">
+      ${kv('国家/城市', [c.country,c.city].filter(Boolean).join(' · '))}
+      ${kv('成立时间', c.founded)}
+      ${kv('员工数量', c.employees)}
+      ${kv('营收估算', c.revenue_estimate)}
+      ${kv('公司类型', c.company_type)}
+      ${kv('行业', c.industry)}
+      ${kv('公司规模', c.company_size)}
+      ${kv('母公司', c.parent_company)}
+      ${kv('LinkedIn', c.linkedin ? `<a href="${escapeAttr(c.linkedin)}" target="_blank">查看 ↗</a>` : '', true)}
+    </div>
+    <div class="exec-summary">${escapeHtml(c.executive_summary||'')}</div>
+  `;
+}
+function kv(k,v,isHtml){
+  if(!v) return '';
+  return `<div class="kv-row"><div class="k">${k}</div><div class="v">${isHtml?v:escapeHtml(v)}</div></div>`;
+}
+function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+
+function renderScore(){
+  const s = state.results.fit && state.results.fit.customer_score;
+  if(!s){ $('scoreCard').innerHTML = '<div class="empty-state">评分生成中…</div>'; return; }
+  const b = s.breakdown||{};
+  const rows = [
+    ['公司规模', b.company_size, 15], ['市场潜力', b.market_potential, 15], ['产品匹配度', b.product_fit, 20],
+    ['技术匹配度', b.technology_fit, 15], ['采购潜力', b.purchase_potential, 15], ['采购信号', b.buying_signals, 10], ['战略价值', b.strategic_value, 10]
+  ];
+  $('scoreCard').innerHTML = `
+    <div style="font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); letter-spacing:1px;">CUSTOMER SCORE</div>
+    <div class="score-num">${s.total ?? '—'}<span style="font-size:16px;color:var(--text-faint)">/100</span></div>
+    <div class="score-tier" style="color:${tierColor(s.priority_tier)}">优先级 ${s.priority_tier || '—'} 级客户</div>
+    <div class="score-bars">
+      ${rows.map(r=>`
+        <div class="score-bar-row">${r[0]} <span style="float:right;color:var(--text-dim)">${r[1]??0}/${r[2]}</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${Math.min(100,((r[1]||0)/r[2])*100)}%"></div></div></div>
+      `).join('')}
+    </div>
+  `;
+}
+function tierColor(t){ return {S:'var(--teal)',A:'var(--amber)',B:'var(--amber)',C:'var(--text-dim)',D:'var(--text-faint)'}[t] || 'var(--text-dim)'; }
+
+const TABS = [
+  {id:'business', label:'Business'}, {id:'product', label:'Products'}, {id:'tech', label:'Technology'},
+  {id:'competitors', label:'Competitors'}, {id:'ecosystem', label:'People & Ecosystem'}, {id:'signals', label:'Signals'},
+  {id:'fit', label:'Opportunities'}, {id:'strategy', label:'Strategy & Battle Card'}, {id:'sources', label:'Sources'}
+];
+let activeTab = 'business';
+
+function renderTabs(){
+  $('tabbar').innerHTML = TABS.map(t=>`<button class="tab-btn ${t.id===activeTab?'active':''} ${state.results[t.id]||t.id==='sources'?'ready':''}" data-tab="${t.id}">${t.label}<span class="dot"></span></button>`).join('');
+  document.querySelectorAll('.tab-btn').forEach(b=> b.onclick = ()=>{ activeTab = b.dataset.tab; renderTabs(); renderTabContent(); });
+  renderTabContent();
+}
+
+function renderTabContent(){
+  const c = $('tabContent');
+  switch(activeTab){
+    case 'business': c.innerHTML = tplBusiness(); break;
+    case 'product': c.innerHTML = tplProduct(); break;
+    case 'tech': c.innerHTML = tplTech(); break;
+    case 'competitors': c.innerHTML = tplCompetitors(); break;
+    case 'ecosystem': c.innerHTML = tplEcosystem(); break;
+    case 'signals': c.innerHTML = tplSignals(); break;
+    case 'fit': c.innerHTML = tplFit(); break;
+    case 'strategy': c.innerHTML = tplStrategy(); break;
+    case 'sources': c.innerHTML = tplSources(); break;
+  }
+}
+
+function tplBusiness(){
+  const b = state.results.business; if(!b) return emptyTab('business');
+  return `
+    <div class="section-title">Business Intelligence</div>
+    <div class="grid-cards">
+      <div class="mini-card"><h4>Business Model</h4><p>${escapeHtml(b.business_model)}</p></div>
+      <div class="mini-card"><h4>Revenue Model</h4><p>${escapeHtml(b.revenue_model)}</p></div>
+      <div class="mini-card"><h4>Target Customer</h4><p>${escapeHtml(b.target_customer)}</p></div>
+      <div class="mini-card"><h4>Sales Model</h4><p>${escapeHtml(b.sales_model)}</p></div>
+      <div class="mini-card"><h4>Core Market</h4><p>${escapeHtml(b.core_market)}</p><div class="tag-list">${(b.market_regions||[]).map(r=>`<span class="tag">${escapeHtml(r)}</span>`).join('')}</div></div>
+      <div class="mini-card"><h4>Growth Market</h4><p>${escapeHtml(b.growth_market)}</p></div>
+    </div>
+    <div class="mini-card" style="margin-top:14px;"><h4>Core Products</h4><div class="tag-list">${(b.core_products||[]).map(p=>`<span class="tag">${escapeHtml(p)}</span>`).join('')}</div></div>
+  `;
+}
+
+function tplProduct(){
+  const p = state.results.product; if(!p) return emptyTab('product');
+  return `
+    <div class="section-title">Product Intelligence <span class="n">${(p.products||[]).length} products</span></div>
+    ${(p.products||[]).map(it=>`
+      <div class="list-card">
+        <div class="list-card-head"><div><div class="list-card-title">${escapeHtml(it.name)}</div><div class="list-card-sub">${escapeHtml(it.type||'')} ${it.status?(' · '+escapeHtml(it.status)):''}</div></div><div style="text-align:right; font-size:11.5px; color:var(--text-faint)">${escapeHtml(it.price||'')}</div></div>
+        <p>${escapeHtml(it.description||'')}</p>
+        <div class="tag-list">${(it.key_features||[]).map(f=>`<span class="tag">${escapeHtml(f)}</span>`).join('')}</div>
+      </div>
+    `).join('') || emptyTab()}
+    <div class="grid-cards" style="margin-top:6px;">
+      <div class="mini-card"><h4>Product Strategy</h4><p>${escapeHtml(p.product_strategy)}</p></div>
+      <div class="mini-card"><h4>Potential Gaps</h4><p>${escapeHtml(p.potential_gaps)}</p></div>
+    </div>
+  `;
+}
+
+function tplTech(){
+  const t = state.results.tech; if(!t) return emptyTab('tech');
+  return `
+    <div class="section-title">Technographic Intelligence</div>
+    <p style="font-size:12.5px;color:var(--text-dim);margin:0 0 14px;">${escapeHtml(t.summary||'')}</p>
+    <table class="data-table">
+      <thead><tr><th>Technology</th><th>Vendor</th><th>Product</th><th>Confidence</th><th>Evidence</th></tr></thead>
+      <tbody>
+        ${(t.technologies||[]).map(x=>`<tr><td class="strong">${escapeHtml(x.technology)}</td><td>${escapeHtml(x.vendor||'—')}</td><td>${escapeHtml(x.product||'—')}</td><td><span class="badge ${x.confidence}">${x.confidence}</span></td><td>${escapeHtml(x.evidence||'')}</td></tr>`).join('') || `<tr><td colspan="5" class="empty-state">暂无可验证的技术栈信息</td></tr>`}
+      </tbody>
+    </table>
+  `;
+}
+
+function tplCompetitors(){
+  const cp = state.results.competitors; if(!cp) return emptyTab('competitors');
+  const renderList = (arr, label) => `
+    <div class="section-title" style="margin-top:20px;">${label} <span class="n">${(arr||[]).length}</span></div>
+    ${(arr||[]).map(x=>`
+      <div class="list-card">
+        <div class="list-card-head"><div class="list-card-title">${escapeHtml(x.company)}</div><div class="list-card-sub">${escapeHtml(x.market||'')}</div></div>
+        <div class="fit-grid">
+          <div><div class="lbl">Product</div><div class="val">${escapeHtml(x.product||'')}</div></div>
+          <div><div class="lbl">Price</div><div class="val">${escapeHtml(x.price||'')}</div></div>
+          <div><div class="lbl">Strengths</div><div class="val">${escapeHtml(x.strengths||'')}</div></div>
+          <div><div class="lbl">Weaknesses</div><div class="val">${escapeHtml(x.weaknesses||'')}</div></div>
+          <div><div class="lbl">Customers</div><div class="val">${escapeHtml(x.customers||'')}</div></div>
+          <div><div class="lbl">Tech Diff.</div><div class="val">${escapeHtml(x.tech_diff||'')}</div></div>
+        </div>
+      </div>
+    `).join('') || emptyTab()}
+  `;
+  return renderList(cp.direct_competitors,'Direct Competitors') + renderList(cp.indirect_competitors,'Indirect Competitors');
+}
+
+function tplEcosystem(){
+  const e = state.results.ecosystem; if(!e) return emptyTab('ecosystem');
+  const eco = e.ecosystem || {};
+  const cols = [['Customers','customers'],['Suppliers','suppliers'],['Partners','partners'],['Distributors','distributors'],['Telecom Operators','telecom_operators'],['Investors','investors']];
+  return `
+    <div class="section-title">Key Decision Makers <span class="n">${(e.decision_makers||[]).length}</span></div>
+    <div class="person-grid">
+      ${(e.decision_makers||[]).map(p=>`
+        <div class="person-card">
+          <div class="person-name">${escapeHtml(p.name)}</div>
+          <div class="person-title">${escapeHtml(p.title||'')}</div>
+          <div class="person-title" style="color:var(--text-faint)">${escapeHtml(p.location||'')}</div>
+          <span class="person-role">${escapeHtml(p.decision_role||'')}</span>
+          ${p.linkedin?`<div style="margin-top:8px;"><a href="${escapeAttr(p.linkedin)}" target="_blank" style="font-size:11px;">LinkedIn ↗</a></div>`:''}
+        </div>
+      `).join('') || emptyTab()}
+    </div>
+    <div class="section-title" style="margin-top:24px;">Ecosystem</div>
+    <div class="ecosystem-cols">
+      ${cols.map(([label,key])=>`
+        <div class="eco-col"><h5>${label}</h5><ul>${(eco[key]||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('') || '<li style="opacity:.4">—</li>'}</ul></div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function tplSignals(){
+  const s = state.results.signals; if(!s) return emptyTab('signals');
+  if(!(s.signals||[]).length) return emptyTab('未监测到明显采购信号');
+  return `
+    <div class="section-title">Buying Signals <span class="n">${s.signals.length}</span></div>
+    ${s.signals.map(x=>`
+      <div class="signal-row">
+        <div class="signal-cat">${escapeHtml(x.category)}</div>
+        <div class="signal-body">
+          <div class="signal-title">${escapeHtml(x.signal)} <span class="badge ${x.importance}" style="margin-left:6px;">${x.importance}</span></div>
+          <div class="signal-meta">${escapeHtml(x.date||'')}</div>
+          <div class="signal-interp">${escapeHtml(x.interpretation||'')}</div>
+          ${x.evidence?`<div class="evidence">${escapeHtml(x.evidence)}</div>`:''}
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function tplFit(){
+  const f = state.results.fit; if(!f) return emptyTab('fit');
+  const opp = f.opportunities || {};
+  return `
+    <div class="section-title">Product Fit</div>
+    ${(f.product_fit||[]).map(x=>`
+      <div class="fit-card">
+        <div class="fit-head"><div class="list-card-title">${escapeHtml(x.our_product)}</div><div class="fit-score">${x.fit_score} <span class="badge ${x.level}">${x.level}</span></div></div>
+        <div class="fit-grid">
+          <div><div class="lbl">Why</div><div class="val">${escapeHtml(x.why||'')}</div></div>
+          <div><div class="lbl">Evidence</div><div class="val">${escapeHtml(x.evidence||'')}</div></div>
+          <div><div class="lbl">Gap</div><div class="val">${escapeHtml(x.gap||'')}</div></div>
+          <div><div class="lbl">Entry Strategy</div><div class="val">${escapeHtml(x.entry_strategy||'')}</div></div>
+        </div>
+      </div>
+    `).join('')}
+    <div class="section-title" style="margin-top:26px;">Opportunity Map</div>
+    <div class="opp-cols">
+      <div><div class="opp-col-head high">High Priority</div>${oppItems(opp.high_priority)}</div>
+      <div><div class="opp-col-head medium">Medium Priority</div>${oppItems(opp.medium_priority)}</div>
+      <div><div class="opp-col-head long">Long Term</div>${oppItems(opp.long_term)}</div>
+    </div>
+  `;
+}
+function oppItems(arr){
+  if(!arr || !arr.length) return `<div class="empty-state" style="padding:14px 0;">—</div>`;
+  return arr.map(o=>`
+    <div class="opp-item">
+      <div class="title">${escapeHtml(o.opportunity)}</div>
+      <div class="meta">${escapeHtml(o.product||'')} · Fit ${o.fit_score ?? ''}</div>
+      <div>${escapeHtml(o.reason||'')}</div>
+      <div class="act">${escapeHtml(o.recommended_action||'')}</div>
+    </div>
+  `).join('');
+}
+
+function tplStrategy(){
+  const st = state.results.strategy; if(!st) return emptyTab('strategy');
+  const s = st.sales_strategy||{}, mp = st.meeting_prep||{}, bc = st.battle_card||{};
+  const score = state.results.fit && state.results.fit.customer_score;
+  return `
+    <div class="section-title">Sales Strategy</div>
+    <div class="strategy-grid">
+      <div class="mini-card"><h4>Entry Point</h4><p>${escapeHtml(s.entry_point)}</p></div>
+      <div class="mini-card"><h4>Recommended Product</h4><p>${escapeHtml(s.recommended_product)}</p></div>
+      <div class="mini-card"><h4>Recommended Persona</h4><p>${escapeHtml(s.recommended_persona)}</p></div>
+      <div class="mini-card"><h4>Recommended Timing</h4><p>${escapeHtml(s.recommended_timing)}</p></div>
+      <div class="mini-card"><h4>Recommended Message</h4><p>${escapeHtml(s.recommended_message)}</p></div>
+      <div class="mini-card"><h4>Potential Objections</h4><p>${escapeHtml(s.objections)}</p></div>
+      <div class="mini-card"><h4>Competitive Risks</h4><p>${escapeHtml(s.competitive_risks)}</p></div>
+      <div class="mini-card"><h4>Next Action</h4><p>${escapeHtml(s.next_action)}</p></div>
+    </div>
+
+    <div class="section-title" style="margin-top:26px;">Meeting Preparation — Questions to Ask</div>
+    <div class="list-card">
+      <ol class="q-list">${(mp.questions||[]).map(q=>`<li>${escapeHtml(q)}</li>`).join('')}</ol>
+    </div>
+
+    <div class="section-title" style="margin-top:26px;">Customer Battle Card</div>
+    <div class="battle-card" id="battleCardEl">
+      <div class="bc-header">
+        <div><div class="bc-title">${escapeHtml(state.company.name)}</div><div class="bc-sub">${escapeHtml(state.company.company_type||'')} · ${escapeHtml(state.market)}</div></div>
+        <div class="bc-score"><div class="n">${score?score.total:'—'}</div><div class="t">/100 · ${score?score.priority_tier:'—'} tier</div></div>
+      </div>
+      <div class="bc-body">
+        <div class="bc-sec"><h5>Why We Care</h5><ul>${(bc.why_we_care||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div>
+        <div class="bc-sec"><h5>Best Opportunities</h5><ul>${(bc.best_opportunities||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div>
+        <div class="bc-sec"><h5>Buying Signals</h5><ul>${(bc.buying_signals||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div>
+        <div class="bc-sec"><h5>Key Decision Makers</h5><ul>${(bc.key_decision_makers||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div>
+      </div>
+      <div class="bc-body" style="grid-template-columns:1fr; padding-top:0;">
+        <div class="bc-sec"><h5>Recommended Strategy</h5><div class="bc-flow">${(bc.recommended_strategy_path||[]).map((x,i,arr)=>`<span class="step">${escapeHtml(x)}</span>${i<arr.length-1?'<span class="arrow">→</span>':''}`).join('')}</div></div>
+      </div>
+      <div class="bc-next"><b>Next Action:</b> ${escapeHtml(bc.next_action||'')}</div>
+    </div>
+  `;
+}
+
+function tplSources(){
+  const seen = new Set(); const rows = [];
+  state.sourcesAll.forEach(s=>{
+    const key = (s.fact||'')+(s.url||'');
+    if(seen.has(key)) return; seen.add(key); rows.push(s);
+  });
+  if(!rows.length) return emptyTab('暂无来源记录');
+  return `
+    <div class="section-title">Sources <span class="n">${rows.length} facts</span></div>
+    ${rows.map(s=>`
+      <div class="source-row">
+        <div class="fact">${escapeHtml(s.fact)} ${s.url?`<a href="${escapeAttr(s.url)}" target="_blank">↗</a>`:''}</div>
+        <div class="meta"><span class="badge ${confBadge(s.confidence)}">${escapeHtml(s.confidence||'Unknown')}</span> ${escapeHtml(s.source_type||'')}</div>
+      </div>
+    `).join('')}
+  `;
+}
+function confBadge(c){
+  if(!c) return 'Unknown';
+  if(c.includes('Confirmed')||c==='High Confidence') return 'Confirmed';
+  if(c.includes('Medium')) return 'Likely';
+  return 'Unknown';
+}
+
+function emptyTab(idOrMsg, maybeMsg){
+  // supports emptyTab('business') for error/loading states, and emptyTab(undefined, 'custom msg') for plain empty states
+  const isAgentId = idOrMsg && AGENT_FN[idOrMsg];
+  const id = isAgentId ? idOrMsg : null;
+  const msg = isAgentId ? maybeMsg : idOrMsg;
+  const err = id ? state.errors[id] : null;
+  if(err){
+    return `<div class="empty-state">该模块获取失败：${escapeHtml(err)}<br><button class="retry-btn" onclick="window.retryFromTab('${id}')">重试此模块</button></div>`;
+  }
+  if(id && !state.results[id]){
+    return `<div class="empty-state">分析中…</div>`;
+  }
+  return `<div class="empty-state">${msg||'该模块暂无足够信息（AI未能找到可验证证据）'}</div>`;
+}
+window.retryFromTab = function(id){ retryAgent(id); };
+
+/* ============================= export ============================= */
+$('exportPdfBtn').onclick = ()=> window.print();
+$('exportMdBtn').onclick = ()=>{
+  const md = buildMarkdown();
+  const blob = new Blob([md], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (state.company.name||'battlecard').replace(/[^a-zA-Z0-9\u4e00-\u9fa5]+/g,'_') + '_客户作战卡.md';
+  a.click();
+};
+
+function buildMarkdown(){
+  const c = state.company, b = state.results.business||{}, p = state.results.product||{}, t = state.results.tech||{},
+        cp = state.results.competitors||{}, e = state.results.ecosystem||{}, s = state.results.signals||{},
+        f = state.results.fit||{}, st = state.results.strategy||{};
+  const score = f.customer_score||{};
+  let md = `# ${c.name} — 客户作战卡\n\n`;
+  md += `**Customer Score:** ${score.total}/100 (${score.priority_tier} tier)  \n**类型:** ${c.company_type||''}  \n**国家:** ${c.country||''}  \n**规模:** ${c.company_size||''}\n\n`;
+  md += `## Executive Summary\n${c.executive_summary||''}\n\n`;
+  md += `## Business Intelligence\n- Business Model: ${b.business_model||''}\n- Revenue Model: ${b.revenue_model||''}\n- Target Customer: ${b.target_customer||''}\n\n`;
+  md += `## Products\n` + (p.products||[]).map(x=>`- **${x.name}** (${x.type}): ${x.description}`).join('\n') + '\n\n';
+  md += `## Technology\n` + (t.technologies||[]).map(x=>`- ${x.technology} — ${x.vendor||'—'} [${x.confidence}]`).join('\n') + '\n\n';
+  md += `## Competitors\n` + (cp.direct_competitors||[]).map(x=>`- ${x.company}: ${x.strengths} / ${x.weaknesses}`).join('\n') + '\n\n';
+  md += `## Key Decision Makers\n` + (e.decision_makers||[]).map(x=>`- ${x.name}, ${x.title} (${x.decision_role})`).join('\n') + '\n\n';
+  md += `## Buying Signals\n` + (s.signals||[]).map(x=>`- [${x.importance}] ${x.signal} (${x.date})`).join('\n') + '\n\n';
+  md += `## Product Fit\n` + (f.product_fit||[]).map(x=>`- ${x.our_product}: ${x.fit_score} (${x.level}) — ${x.why}`).join('\n') + '\n\n';
+  md += `## Sales Strategy\n- Entry Point: ${(st.sales_strategy||{}).entry_point||''}\n- Recommended Product: ${(st.sales_strategy||{}).recommended_product||''}\n- Next Action: ${(st.sales_strategy||{}).next_action||''}\n\n`;
+  md += `## Meeting Questions\n` + ((st.meeting_prep||{}).questions||[]).map((q,i)=>`${i+1}. ${q}`).join('\n') + '\n\n';
+  md += `## Sources\n` + state.sourcesAll.map(x=>`- ${x.fact} — ${x.url||''} [${x.confidence}]`).join('\n');
+  return md;
+}
+
+updateTokenPill();
+</script>
+</body>
+</html>
