@@ -347,10 +347,11 @@ input,textarea,select{font-family:var(--font-body);}
 .drawer h3{font-family:var(--font-display); font-size:16px; margin:0 0 4px;}
 .drawer .desc{font-size:12px; color:var(--text-faint); margin-bottom:18px; line-height:1.6;}
 .drawer label{font-size:11.5px; color:var(--text-faint); font-family:var(--font-mono); display:block; margin:14px 0 5px;}
-.drawer input[type=text], .drawer input[type=number], .drawer textarea{
+.drawer input[type=text], .drawer input[type=number], .drawer input[type=password], .drawer textarea, .drawer select{
   width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:7px; color:var(--text);
   padding:9px 10px; font-size:12.5px; resize:vertical;
 }
+.drawer select{cursor:pointer;}
 .product-row{border:1px solid var(--border-soft); border-radius:8px; padding:10px; margin-bottom:10px; position:relative;}
 .product-row .rm{position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-faint); font-size:14px;}
 .small-btn{background:var(--panel-2); border:1px solid var(--border); color:var(--text-dim); border-radius:7px; padding:7px 12px; font-size:12px; width:100%;}
@@ -384,6 +385,7 @@ input,textarea,select{font-family:var(--font-body);}
     </div>
   </div>
   <div class="topbar-right">
+    <button class="icon-btn" id="modelPill" style="color:var(--red); border-color:var(--red-dim);">⚠ 未配置AI模型</button>
     <div class="token-pill" id="tokenPill" title="本次会话累计Token消耗与预估费用">Token <b id="tokenCount">0</b> · 预估 $<span id="costCount">0.00</span></div>
     <button class="icon-btn" id="historyBtn">研究历史</button>
     <button class="icon-btn" id="settingsBtn">产品库 & 设置</button>
@@ -469,7 +471,31 @@ input,textarea,select{font-family:var(--font-body);}
 <div class="drawer-overlay" id="drawerOverlay"></div>
 <div class="drawer" id="drawer">
   <button class="close-drawer" id="closeDrawer">✕</button>
-  <h3>我司产品库</h3>
+
+  <h3 style="margin-top:0;">AI 大模型接入 <span style="font-size:10px;color:var(--red);font-family:var(--font-mono)">必填</span></h3>
+  <div class="desc">选择供应商并填入 API Key。请求由你的浏览器直连所选服务商官方 API，Key 仅保存在浏览器 localStorage，不经过任何第三方服务器。推荐免费模型：智谱 glm-4-flash、硅基流动、通义 qwen-flash、Groq。</div>
+  <label>模型供应商</label>
+  <select id="llmProvider"></select>
+  <div id="llmPriceNote" style="font-size:11px; color:var(--teal); font-family:var(--font-mono); margin-top:5px;"></div>
+  <label>模型名称</label>
+  <input type="text" id="llmModel" placeholder="glm-4-flash">
+  <label>API Key</label>
+  <input type="password" id="llmKey" placeholder="粘贴你的 API Key" autocomplete="off">
+  <a id="keyLink" href="#" target="_blank" style="font-size:11px; color:var(--teal); text-decoration:underline; display:inline-block; margin-top:4px;">→ 去获取此供应商的 API Key</a>
+  <label id="endpointLabel" style="display:none;">接口地址（完整 chat/completions URL）</label>
+  <input type="text" id="llmEndpoint" style="display:none;" placeholder="https://your-proxy/v1/chat/completions">
+  <button class="small-btn" id="testLlmBtn" style="margin-top:12px;">测试连接</button>
+  <div id="llmTestResult" style="font-size:11.5px; margin-top:6px; font-family:var(--font-mono); color:var(--text-faint);"></div>
+
+  <h3 style="margin-top:28px;">全网搜索数据源 <span style="font-size:10px;color:var(--amber);font-family:var(--font-mono)">推荐</span></h3>
+  <div class="desc">配置后每个情报模块会自动检索公开网页，把结果与真实 URL 注入分析，来源可信度大幅提升。Tavily 每月 1000 次免费额度足够日常使用。不配置则仅用模型已有知识（实时性信息可信度会降低）。</div>
+  <label>搜索供应商</label>
+  <select id="searchProvider"></select>
+  <label id="searchKeyLabel">搜索 API Key</label>
+  <input type="password" id="searchKey" placeholder="tvly-..." autocomplete="off">
+  <a id="searchKeyLink" href="#" target="_blank" style="font-size:11px; color:var(--teal); text-decoration:underline; display:inline-block; margin-top:4px;">→ 去获取搜索 API Key</a>
+
+  <h3 style="margin-top:28px;">我司产品库</h3>
   <div class="desc">用于 Product Fit / Opportunity Map 匹配分析。可自行增删改，将作为上下文提供给 AI，不会被发送到公司外部（仅用于本次 API 调用）。</div>
   <div id="productList"></div>
   <button class="small-btn" id="addProductBtn">+ 添加产品</button>
@@ -483,9 +509,10 @@ input,textarea,select{font-family:var(--font-body);}
 
   <h3 style="margin-top:28px;">关于联网与运行方式</h3>
   <div class="desc">
-    本页面运行在 Claude 的 Artifact 沙箱中，调用 Anthropic API（含 Web Search 工具）无需你提供 API Key、无需部署，直接在本对话内即可联网调研。<br><br>
-    若你希望把本页面导出到独立环境自行托管，需要改造为使用你自己的 API Key（浏览器直连 Anthropic API 通常会被 CORS 拦截，需要一个轻量后端转发），当前版本未内置该 fallback。<br><br>
-    若遇到"Failed to fetch"：通常是瞬时网络问题或接口限流，v1.1.0 起已自动重试2次；若仍失败，对应模块会显示"重试"按钮，可单独重试，无需重新开始整个分析。
+    本页面为纯前端独立部署（GitHub Pages，无后端服务器）：<br>
+    · <b>大模型</b>：在上方「AI 大模型接入」选择供应商并填入 API Key。请求由你的浏览器直连所选服务商官方 API，Key 仅保存在浏览器 localStorage。<br>
+    · <b>联网搜索</b>：推荐 Tavily（每月 1000 次免费额度）。配置后每个情报模块会自动检索公开网页，把结果与真实 URL 注入分析。<br>
+    · 若遇到"Failed to fetch"：通常是网络中断、Key 无效、接口地址错误、或该服务商不允许浏览器直连（CORS 限制，可换用自定义中转接口）。已自动重试2次，失败模块可单独重试，无需重新开始整个分析。
   </div>
 
   <h3 style="margin-top:28px;">更新记录 <span id="changelogVersionTag" style="font-size:11px;color:var(--text-faint);font-family:var(--font-mono)"></span></h3>
@@ -494,8 +521,16 @@ input,textarea,select{font-family:var(--font-body);}
 
 <script>
 /* ============================= VERSION ============================= */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const CHANGELOG = [
+  {version:'1.2.0', date:'2026-09-09', notes:[
+    '独立部署版（GitHub Pages）：支持自选大模型供应商并填入自己的 API Key——智谱 glm-4-flash（免费）、硅基流动（免费模型）、通义千问 qwen-flash（免费额度）、Groq（免费）、DeepSeek（超低价）、Kimi、OpenAI、Claude 及任何 OpenAI 兼容自定义接口',
+    '新增免费全网搜索数据源：Tavily（每月1000次免费额度）、博查、Exa。检索结果自动注入每个情报模块并作为真实来源引用，未配置时自动降级为模型已有知识并降低可信度标注',
+    'API Key 仅保存在浏览器 localStorage，请求由浏览器直连所选服务商官方接口，不经过任何第三方服务器',
+    'Token 单价与费用估算按所选模型自动填充，可手动修改',
+    '研究缓存与研究历史改为浏览器 localStorage 存储，脱离 Claude Artifact 沙箱独立运行',
+    '新增模型连接测试按钮与顶栏模型状态指示（AI: 模型名 · 已联网/未联网）'
+  ]},
   {version:'1.1.0', date:'2026-09-02', notes:[
     '修复"Failed to fetch"导致整体调研中断的问题：API请求增加自动重试（网络错误/限流/5xx最多重试2次，指数退避）',
     '单个情报Agent失败不再终止整体流程：已完成的模块立即渐进式展示，失败模块显示"重试"按钮，可单独重试而不重跑全部',
@@ -603,52 +638,224 @@ function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':
 /* ============================= API helper (with retry) ============================= */
 function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
-async function callClaude({prompt, system, useSearch, maxTokens}, retriesLeft = 2){
-  const body = {
-    model: "claude-sonnet-4-6",
-    max_tokens: maxTokens || 1000,
-    system: system,
-    messages: [{role:"user", content: prompt}]
-  };
+/* ============================= AI 供应商与搜索配置 ============================= */
+const PROVIDERS = {
+  zhipu:{label:'智谱 GLM · glm-4-flash 完全免费（推荐）', type:'openai', endpoint:'https://open.bigmodel.cn/api/paas/v4/chat/completions', model:'glm-4-flash', keyUrl:'https://open.bigmodel.cn/usercenter/apikeys', price:[0,0], note:'免费：glm-4-flash 不限用量免费；glm-4-flash-x 可选'},
+  siliconflow:{label:'硅基流动 · Qwen2.5-7B 等多款免费', type:'openai', endpoint:'https://api.siliconflow.cn/v1/chat/completions', model:'Qwen/Qwen2.5-7B-Instruct', keyUrl:'https://cloud.siliconflow.cn/account/ak', price:[0,0], note:'免费：Qwen2.5-7B / GLM-4-9B / InternLM 等开源模型免费调用'},
+  dashscope:{label:'阿里通义千问 · qwen-flash 免费额度', type:'openai', endpoint:'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model:'qwen-flash', keyUrl:'https://bailian.console.aliyun.com/?apiKey=1', price:[0,0], note:'免费：qwen-flash / qwen-turbo 新用户有免费额度'},
+  deepseek:{label:'DeepSeek · 性价比之王', type:'openai', endpoint:'https://api.deepseek.com/chat/completions', model:'deepseek-chat', keyUrl:'https://platform.deepseek.com/api_keys', price:[0.14,0.56], note:'超低价：约 ¥1/百万输入tokens'},
+  moonshot:{label:'月之暗面 Kimi', type:'openai', endpoint:'https://api.moonshot.cn/v1/chat/completions', model:'moonshot-v1-8k', keyUrl:'https://platform.moonshot.cn/console/api-keys', price:[0.8,0.8], note:'新用户赠送额度'},
+  groq:{label:'Groq · 免费额度 · 响应超快', type:'openai', endpoint:'https://api.groq.com/openai/v1/chat/completions', model:'llama-3.3-70b-versatile', keyUrl:'https://console.groq.com/keys', price:[0,0], note:'免费：Llama-3.3-70B 免费额度，速度极快'},
+  openai:{label:'OpenAI · gpt-4o-mini', type:'openai', endpoint:'https://api.openai.com/v1/chat/completions', model:'gpt-4o-mini', keyUrl:'https://platform.openai.com/api-keys', price:[0.15,0.6], note:''},
+  anthropic:{label:'Anthropic · Claude（需支持浏览器直连）', type:'anthropic', endpoint:'https://api.anthropic.com/v1/messages', model:'claude-sonnet-4-6', keyUrl:'https://console.anthropic.com/settings/keys', price:[3,15], note:'浏览器直连需账户开启 CORS 支持'},
+  custom:{label:'自定义 OpenAI 兼容接口（OneAPI/中转等）', type:'openai', endpoint:'', model:'', keyUrl:'', price:[0,0], note:'填写完整接口地址，任何 OpenAI 兼容服务均可'}
+};
+const SEARCH_PROVIDERS = {
+  tavily:{label:'Tavily · 每月 1000 次免费（推荐）', endpoint:'https://api.tavily.com/search', keyUrl:'https://app.tavily.com/home'},
+  bocha:{label:'博查 Bocha · 中文全网搜索', endpoint:'https://api.bochaai.com/v1/web-search', keyUrl:'https://open.bochaai.com/'},
+  exa:{label:'Exa AI · 注册送额度', endpoint:'https://api.exa.ai/search', keyUrl:'https://dashboard.exa.ai/api-keys'},
+  none:{label:'关闭 · 仅用模型已有知识', endpoint:'', keyUrl:''}
+};
+
+const cfg = loadCfg();
+function loadCfg(){
+  const defaults = {llmProvider:'zhipu', llmModel:'glm-4-flash', llmKey:'', llmEndpoint:'', searchProvider:'tavily', searchKey:'', rateIn:0, rateOut:0};
+  try{ return Object.assign(defaults, JSON.parse(localStorage.getItem('cfg:ai')||'{}')); }catch(e){ return defaults; }
+}
+function saveCfg(){ try{ localStorage.setItem('cfg:ai', JSON.stringify(cfg)); }catch(e){} }
+
+/* storage shim：独立部署版用 localStorage 替代 Artifact 沙箱存储 */
+window.storage = {
+  get(k){ const v = localStorage.getItem(k); return v===null ? null : {value:v}; },
+  set(k,v){ localStorage.setItem(k,v); return Promise.resolve(); },
+  list(prefix){ const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.indexOf(prefix)===0) keys.push(k); } return Promise.resolve({keys}); }
+};
+
+/* ---------- 配置界面 ---------- */
+function initAiConfig(){
+  $('llmProvider').innerHTML = Object.entries(PROVIDERS).map(([id,p])=>`<option value="${id}">${p.label}</option>`).join('');
+  $('searchProvider').innerHTML = Object.entries(SEARCH_PROVIDERS).map(([id,p])=>`<option value="${id}">${p.label}</option>`).join('');
+  $('llmProvider').value = cfg.llmProvider;
+  $('searchProvider').value = cfg.searchProvider;
+  $('llmModel').value = cfg.llmModel;
+  $('llmKey').value = cfg.llmKey;
+  $('llmEndpoint').value = cfg.llmEndpoint;
+  $('searchKey').value = cfg.searchKey;
+  $('rateInput').value = cfg.rateIn; $('rateOutput').value = cfg.rateOut;
+  onProviderChange(false); onSearchProviderChange(false);
+  $('llmProvider').onchange = ()=>onProviderChange(true);
+  $('searchProvider').onchange = ()=>onSearchProviderChange(true);
+  ['llmModel','llmKey','llmEndpoint','searchKey'].forEach(id=>{ $(id).onchange = saveCfgFromInputs; });
+  $('rateInput').onchange = $('rateOutput').onchange = saveCfgFromInputs;
+  $('testLlmBtn').onclick = testLlm;
+  $('modelPill').onclick = openDrawer;
+  updateModelPill();
+  if(!cfg.llmKey){
+    errorBanner.innerHTML = `尚未配置 AI 模型 — 本页面为纯前端部署（GitHub Pages），需要在设置中填入你自己的大模型 API Key 才能开始分析。<button class="retry-inline" id="cfgGoBtn">立即配置（推荐免费的 glm-4-flash）</button>`;
+    errorBanner.classList.add('show');
+    $('cfgGoBtn').onclick = openDrawer;
+  }
+}
+function saveCfgFromInputs(){
+  cfg.llmProvider = $('llmProvider').value;
+  cfg.llmModel = $('llmModel').value.trim();
+  cfg.llmKey = $('llmKey').value.trim();
+  cfg.llmEndpoint = $('llmEndpoint').value.trim();
+  cfg.searchProvider = $('searchProvider').value;
+  cfg.searchKey = $('searchKey').value.trim();
+  cfg.rateIn = parseFloat($('rateInput').value)||0;
+  cfg.rateOut = parseFloat($('rateOutput').value)||0;
+  saveCfg(); updateModelPill();
+}
+function onProviderChange(fill){
+  const p = PROVIDERS[$('llmProvider').value];
+  if(fill){
+    $('llmModel').value = p.model;
+    $('llmEndpoint').value = p.endpoint;
+    $('rateInput').value = p.price[0]; $('rateOutput').value = p.price[1];
+  }
+  $('llmPriceNote').textContent = p.note || '';
+  $('keyLink').href = p.keyUrl || '#';
+  $('keyLink').style.display = p.keyUrl ? 'inline' : 'none';
+  const isCustom = $('llmProvider').value === 'custom';
+  $('endpointLabel').style.display = isCustom ? 'block' : 'none';
+  $('llmEndpoint').style.display = isCustom ? 'block' : 'none';
+  if(fill) saveCfgFromInputs();
+}
+function onSearchProviderChange(fill){
+  const sp = SEARCH_PROVIDERS[$('searchProvider').value];
+  const isNone = $('searchProvider').value === 'none';
+  $('searchKeyLink').href = sp.keyUrl || '#';
+  $('searchKeyLink').style.display = sp.keyUrl ? 'inline' : 'none';
+  $('searchKeyLabel').style.display = isNone ? 'none' : 'block';
+  $('searchKey').style.display = isNone ? 'none' : 'block';
+  if(fill) saveCfgFromInputs();
+}
+function updateModelPill(){
+  const pill = $('modelPill');
+  if(cfg.llmKey){
+    const online = (cfg.searchProvider !== 'none' && cfg.searchKey) ? ' · 已联网' : ' · 未联网';
+    pill.textContent = 'AI: ' + (cfg.llmModel || (PROVIDERS[cfg.llmProvider]||{}).model || '?') + online;
+    pill.style.color = 'var(--teal)'; pill.style.borderColor = 'var(--teal-dim)';
+  }else{
+    pill.textContent = '⚠ 未配置AI模型';
+    pill.style.color = 'var(--red)'; pill.style.borderColor = 'var(--red-dim)';
+  }
+}
+async function testLlm(){
+  const el = $('llmTestResult');
+  saveCfgFromInputs();
+  el.style.color = 'var(--text-faint)'; el.textContent = '测试中…';
+  try{
+    await callLLM({system:'你是连通性测试助手。', prompt:'请只回复两个字：正常', maxTokens:50});
+    el.style.color = 'var(--teal)'; el.textContent = '✓ 连接成功，模型可用';
+  }catch(e){
+    el.style.color = 'var(--red)'; el.textContent = '✗ ' + (e.message||'').slice(0,200);
+  }
+}
+
+/* ---------- 联网搜索 ---------- */
+async function rawSearch(query){
+  const sp = SEARCH_PROVIDERS[cfg.searchProvider];
+  if(!sp || !sp.endpoint) throw new Error('搜索未配置');
+  const n = 5;
+  if(cfg.searchProvider === 'tavily'){
+    const resp = await fetch(sp.endpoint, {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.searchKey}, body:JSON.stringify({query, max_results:n})});
+    if(!resp.ok) throw new Error('Tavily '+resp.status+' '+(await resp.text().catch(()=>'')).slice(0,150));
+    const data = await resp.json();
+    return (data.results||[]).map(r=>({title:r.title, url:r.url, snippet:(r.content||'').slice(0,700)}));
+  }
+  if(cfg.searchProvider === 'bocha'){
+    const resp = await fetch(sp.endpoint, {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.searchKey}, body:JSON.stringify({query, count:n, summary:true})});
+    if(!resp.ok) throw new Error('Bocha '+resp.status+' '+(await resp.text().catch(()=>'')).slice(0,150));
+    const data = await resp.json();
+    return (((data.data||{}).webPages||{}).value||[]).map(r=>({title:r.name, url:r.url, snippet:(r.summary||r.snippet||'').slice(0,700)}));
+  }
+  if(cfg.searchProvider === 'exa'){
+    const resp = await fetch(sp.endpoint, {method:'POST', headers:{'Content-Type':'application/json','x-api-key':cfg.searchKey}, body:JSON.stringify({query, numResults:n, contents:{text:{maxCharacters:900}}})});
+    if(!resp.ok) throw new Error('Exa '+resp.status+' '+(await resp.text().catch(()=>'')).slice(0,150));
+    const data = await resp.json();
+    return (data.results||[]).map(r=>({title:r.title, url:r.url, snippet:(r.text||'').slice(0,700)}));
+  }
+  throw new Error('未知搜索供应商');
+}
+async function doSearches(queries){
+  const all = []; const seen = new Set();
+  for(const q of (queries||[]).slice(0,3)){
+    try{
+      const rs = await rawSearch(q);
+      rs.forEach(r=>{ if(r.url && !seen.has(r.url)){ seen.add(r.url); all.push(r); } });
+    }catch(e){ console.warn('search failed:', q, e); }
+  }
+  return all.slice(0,12);
+}
+function formatSearchResults(results){
+  if(!results.length) return '\n【联网检索无结果：请基于已有知识作答，并把不确定信息的 confidence 标为 Low 或 Unknown】';
+  return '\n【联网检索到的公开资料】（系统自动抓取。请优先基于以下资料作答，sources 中的 url 必须引用资料里的真实链接，不得编造）\n' +
+    results.map((r,i)=>`[${i+1}] ${r.title||''}\nURL: ${r.url}\n摘要: ${r.snippet||''}`).join('\n\n');
+}
+
+/* ---------- 统一 LLM 调用（OpenAI 兼容 + Anthropic） ---------- */
+async function callLLM({prompt, system, useSearch, maxTokens, queries}, retriesLeft = 2){
+  const prov = PROVIDERS[cfg.llmProvider] || PROVIDERS.custom;
+  if(!cfg.llmKey) throw new Error('尚未配置 AI 模型 API Key（右上角「产品库 & 设置」→「AI 大模型接入」）');
+
+  let searchCtx = '';
   if(useSearch){
-    body.tools = [{type:"web_search_20250305", name:"web_search"}];
+    if(cfg.searchProvider !== 'none' && cfg.searchKey){
+      try{ searchCtx = formatSearchResults(await doSearches(queries)); }
+      catch(e){ searchCtx = '\n【联网检索失败，请基于已有知识作答，并把不确定信息的 confidence 标为 Medium 或更低】'; }
+    }else{
+      searchCtx = '\n【未配置联网搜索数据源：请基于已有知识作答；无法核实的实时性信息 confidence 必须为 Low 或 Unknown。可在设置面板免费开通 Tavily（每月1000次免费）获得真实来源引用】';
+    }
+  }
+  const fullPrompt = prompt + searchCtx;
+
+  const endpoint = (prov.type === 'anthropic') ? prov.endpoint : (cfg.llmEndpoint || prov.endpoint);
+  const model = cfg.llmModel || prov.model;
+  const headers = {'Content-Type':'application/json'};
+  let body;
+  if(prov.type === 'anthropic'){
+    headers['x-api-key'] = cfg.llmKey;
+    headers['anthropic-version'] = '2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    body = {model, max_tokens: maxTokens||1000, system, messages:[{role:'user', content: fullPrompt}]};
+  }else{
+    headers['Authorization'] = 'Bearer ' + cfg.llmKey;
+    body = {model, temperature:0.3, max_tokens: maxTokens||1000, messages:[{role:'system', content:system}, {role:'user', content: fullPrompt}]};
   }
 
   let resp;
   try{
-    resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(body)
-    });
+    resp = await fetch(endpoint, {method:'POST', headers, body: JSON.stringify(body)});
   }catch(networkErr){
-    // fetch() itself threw -> network-level failure (offline, DNS, aborted, CORS, etc.)
-    if(retriesLeft > 0){
-      await sleep((3 - retriesLeft) * 1200 + 500);
-      return callClaude({prompt, system, useSearch, maxTokens}, retriesLeft - 1);
-    }
-    throw new Error('网络请求失败（Failed to fetch），已自动重试仍未成功。请检查网络连接后点击"重试"。');
+    if(retriesLeft > 0){ await sleep((3-retriesLeft)*1200+500); return callLLM({prompt, system, useSearch, maxTokens, queries}, retriesLeft-1); }
+    throw new Error('网络请求失败（Failed to fetch）。可能原因：网络中断、Key 无效、接口地址错误、或该服务商不允许浏览器直连（CORS）。');
   }
-
   if(!resp.ok){
     const retriable = resp.status === 429 || resp.status >= 500;
-    if(retriable && retriesLeft > 0){
-      await sleep((3 - retriesLeft) * 1200 + 500);
-      return callClaude({prompt, system, useSearch, maxTokens}, retriesLeft - 1);
-    }
+    if(retriable && retriesLeft > 0){ await sleep((3-retriesLeft)*1200+500); return callLLM({prompt, system, useSearch, maxTokens, queries}, retriesLeft-1); }
     const t = await resp.text().catch(()=> '');
-    throw new Error(`API error ${resp.status}: ${t.slice(0,300)}`);
+    let msg = t.slice(0,300);
+    try{ const j = JSON.parse(t); msg = (j.error && (j.error.message || j.error.code)) || j.message || msg; }catch(e){}
+    throw new Error(`API error ${resp.status}: ${msg}`);
   }
 
   const data = await resp.json();
   if(data.usage){
-    state.usage.input += (data.usage.input_tokens||0);
-    state.usage.output += (data.usage.output_tokens||0);
+    const u = data.usage;
+    state.usage.input += (u.input_tokens || u.prompt_tokens || 0);
+    state.usage.output += (u.output_tokens || u.completion_tokens || 0);
     updateTokenPill();
   }
-  const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-  if(!text.trim()){
-    throw new Error('模型返回内容为空，可能是被截断或工具调用异常。');
+  let text = '';
+  if(prov.type === 'anthropic'){
+    text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  }else{
+    text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+  }
+  if(!text || !text.trim()){
+    throw new Error('模型返回内容为空，可能是被截断或模型异常。');
   }
   return text;
 }
@@ -699,7 +906,8 @@ const SYSTEM_PROMPT = `你是"AI客户情报分析平台"的后台情报分析�
 2. 所有内容用中文撰写（公司名、人名、产品名、URL等专有名词保留原文）。
 3. 对不确定或无法用检索证据支撑的信息，confidence字段必须填"Unknown"，禁止编造事实、编造人名或编造URL。
 4. 每个关键结论尽量给出sources数组，包含fact（结论摘要）、url、source_type（Official Website/LinkedIn/News/Government/Company Registry/Industry Report/Social Media/Other）、confidence（Confirmed/High Confidence/Medium Confidence/Low Confidence）。
-5. executive_summary等摘要字段严格控制字数，避免空话套话，聚焦可用于销售决策的信息。`;
+5. executive_summary等摘要字段严格控制字数，避免空话套话，聚焦可用于销售决策的信息。
+6. 若上下文提供了【联网检索到的公开资料】，请优先基于这些资料作答，sources 中的 url 必须引用资料中的真实链接，不得编造URL。`;
 
 /* ============================= main flow ============================= */
 searchBtn.onclick = runResearch;
@@ -732,10 +940,11 @@ async function runResearch(){
     }
 
     setProgress('identify','active');
-    const idText = await callClaude({
+    const idText = await callLLM({
       system: SYSTEM_PROMPT,
       useSearch: true,
       maxTokens: 900,
+      queries: [q, q + ' company official website', q + ' 公司 官网'],
       prompt: `请识别以下目标公司并给出基础画像。用户输入："${q}"。目标市场偏好：${state.market}；我方所处行业：${state.industry}。
 如果搜索后发现有多个同名或高度相似的公司（不同国家/主体），返回status="ambiguous"并在candidates中列出2-5个候选（含name/domain/country/note简述区别）。
 如果完全找不到相关公司，返回status="not_found"。
@@ -829,37 +1038,37 @@ const ctx = () => `公司: ${state.company.name} (${state.company.domain})，国
 
 const AGENT_FN = {
   business: async () => {
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, queries:[`${state.company.name} business model revenue customers`, `${state.company.name} funding investors news`], prompt:
       `${ctx()} 请分析该公司的商业情报。JSON schema:
       {"business_model":"","revenue_model":"","target_customer":"","core_products":["",""],"sales_model":"","market_regions":["",""],"core_market":"","growth_market":"","sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
     state.results.business = parseJson(text); mergeSources(state.results.business.sources);
   },
   product: async () => {
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, queries:[`${state.company.name} products solutions pricing`, `${state.company.name} 产品 解决方案`], prompt:
       `${ctx()} 请从官网及公开资料中抓取该公司的产品情报（最多6个核心产品/方案）。JSON schema:
       {"products":[{"name":"","type":"","description":"","target_customer":"","key_features":["",""],"tech_specs":"","price":"","status":"","launch_date":""}],"product_portfolio_summary":"","product_strategy":"","potential_gaps":"","sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
     state.results.product = parseJson(text); mergeSources(state.results.product.sources);
   },
   tech: async () => {
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, queries:[`${state.company.name} technology platform API integration`, `${state.company.name} telematics GPS IoT cloud platform`], prompt:
       `${ctx()} 请分析该公司使用/集成的技术栈（如 GPS/GNSS/2G/3G/4G/Cat1/Cat4/LTE-M/NB-IoT/eSIM/CAN/OBD/BLE/AI Camera/Cloud/AWS/Azure/API/MQTT等），如能确认具体供应商请标出。禁止把推测写成事实，confidence必须准确反映证据强度。JSON schema:
       {"technologies":[{"technology":"","vendor":"","product":"","confidence":"Confirmed|Likely|Unknown","evidence":""}],"summary":"","sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
     state.results.tech = parseJson(text); mergeSources(state.results.tech.sources);
   },
   competitors: async () => {
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, queries:[`${state.company.name} competitors alternatives comparison`, `${state.company.name} vs market share`], prompt:
       `${ctx()} 请找出该公司的直接竞争对手（2-4个）与间接竞争对手（1-3个）。JSON schema:
       {"direct_competitors":[{"company":"","product":"","market":"","strengths":"","weaknesses":"","price":"","customers":"","tech_diff":""}],"indirect_competitors":[{"company":"","product":"","market":"","strengths":"","weaknesses":"","price":"","customers":"","tech_diff":""}],"sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
     state.results.competitors = parseJson(text); mergeSources(state.results.competitors.sources);
   },
   ecosystem: async () => {
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:true, maxTokens:1000, queries:[`${state.company.name} leadership team CEO executives`, `${state.company.name} partners distributors investors`], prompt:
       `${ctx()} 请分析该公司的生态关系（客户/供应商/合作伙伴/分销商/电信运营商/技术供应商/投资方，每类最多4项，找不到就留空数组），并找出关键决策人（3-6人，含CEO/CTO/采购/商务负责人等，仅列出通过公开信息如LinkedIn/官网可验证的真实姓名，找不到真实姓名就不要编造，宁可少列）。JSON schema:
       {"ecosystem":{"customers":[""],"suppliers":[""],"partners":[""],"distributors":[""],"telecom_operators":[""],"technology_vendors":[""],"investors":[""]},"decision_makers":[{"name":"","title":"","department":"","linkedin":"","location":"","seniority":"","decision_role":"Economic Buyer|Technical Buyer|Influencer|Champion|Procurement"}],"sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
     state.results.ecosystem = parseJson(text); mergeSources(state.results.ecosystem.sources);
   },
   signals: async () => {
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:true, maxTokens:900, queries:[`${state.company.name} news 2025 2026`, `${state.company.name} funding hiring expansion partnership contract`], prompt:
       `${ctx()} 请监控该公司近12个月内的采购/业务信号（新闻、招聘、融资、并购、合作、新市场、新产品、技术迁移、法规变化等），最多8条，按重要性排序，找不到就返回空数组，不要编造日期。JSON schema:
       {"signals":[{"category":"Business|Hiring|Technology|Product|Regulatory","signal":"","date":"","importance":"High|Medium|Low","evidence":"","interpretation":""}],"sources":[{"fact":"","url":"","source_type":"","confidence":""}]}`});
     state.results.signals = parseJson(text); mergeSources(state.results.signals.sources);
@@ -871,7 +1080,7 @@ const AGENT_FN = {
       business: state.results.business||{}, tech: (state.results.tech||{}).technologies||[], signals: (state.results.signals||{}).signals||[],
       products: (state.results.product||{}).products||[]
     }).slice(0, 6000);
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:false, maxTokens:1000, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:false, maxTokens:1000, prompt:
       `基于以下客户情报上下文，将客户需求与我司产品库进行匹配打分，并生成机会地图与客户评分。
 客户情报（JSON摘要，部分模块若缺失代表该模块尚未完成或获取失败，请基于现有信息合理评估）：${contextSummary}
 我司产品库：
@@ -890,7 +1099,7 @@ JSON schema:
       competitors: (state.results.competitors||{}).direct_competitors||[], people: (state.results.ecosystem||{}).decision_makers||[],
       signals: (state.results.signals||{}).signals||[], fit: state.results.fit||{}
     }).slice(0, 7000);
-    const text = await callClaude({system:SYSTEM_PROMPT, useSearch:false, maxTokens:1000, prompt:
+    const text = await callLLM({system:SYSTEM_PROMPT, useSearch:false, maxTokens:1000, prompt:
       `基于以下完整客户情报，生成销售策略、拜访准备材料与最终的客户作战卡（Battle Card）。拜访问题需基于该客户真实信息动态生成10-15个（不要用通用模板问题），每个问题要具体到这家公司的业务/技术/信号。
 情报上下文（部分模块若缺失代表该模块尚未完成或获取失败，请基于现有信息合理生成）：${strategyContext}
 JSON schema:
@@ -1358,6 +1567,7 @@ function buildMarkdown(){
   return md;
 }
 
+initAiConfig();
 updateTokenPill();
 </script>
 </body>
